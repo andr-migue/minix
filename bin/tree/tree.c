@@ -2,8 +2,9 @@
 #include <string.h>
 #include <dirent.h>  
 #include <sys/stat.h>
+#include <limits.h>
 
-void print_tree(char* path, int depth)
+static void print_tree(const char *path, int depth)
 {
 	DIR *dir = opendir(path);
 
@@ -41,7 +42,7 @@ void print_tree(char* path, int depth)
 
 int main(int argc, char *argv[])
 {
-	char *path;
+	const char *path;
 
 	if (argc > 1)
 		path = argv[1];
