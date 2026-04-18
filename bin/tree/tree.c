@@ -3,6 +3,7 @@
 #include <dirent.h>  
 #include <sys/stat.h>
 #include <limits.h>
+#include <unistd.h>
 
 static void print_tree(const char *path, int depth)
 {
@@ -25,7 +26,7 @@ static void print_tree(const char *path, int depth)
             continue;
 
 		for (int i = 0; i < depth; i++)
-			printf("---");
+			printf("--");
 
 		printf("%s\n", entry->d_name);
 
@@ -43,11 +44,15 @@ static void print_tree(const char *path, int depth)
 int main(int argc, char *argv[])
 {
 	const char *path;
+	char cwd[PATH_MAX];
 
 	if (argc > 1)
 		path = argv[1];
-	else
-		path = ".";
+	else 
+    {
+		getcwd(cwd, sizeof(cwd));
+		path = cwd;
+	}
 
 	printf("%s\n", path);
 	print_tree(path, 1);
