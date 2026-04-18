@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	}
 
 	printf("%s\n", path);
-	print_tree(path, 1);
+	print_tree(path, 0);
 
 	return 0;
 }
