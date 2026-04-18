@@ -26,15 +26,15 @@ static void print_tree(const char *path, int depth)
             continue;
 
 		for (int i = 0; i < depth; i++)
-			printf("--");
+			printf("|  ");
 
-		printf("%s\n", entry->d_name);
+		printf("|-- ");
+        printf("%s\n", entry->d_name);
 
 		snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
-
         int check = lstat(fullpath, &entry_stats);
 
-		if (!(check == -1) && S_ISDIR(entry_stats.st_mode) && !S_ISLNK(entry_stats.st_mode))
+		if (!(check == -1) && S_ISDIR(entry_stats.st_mode) && !S_ISLNK(entry_stats.st_mode)) 
 		    print_tree(fullpath, depth + 1);
 	}
 
