@@ -1,3 +1,0 @@
-{
-    "dotnet.defaultSolution": "external/bsd/llvm/dist/clang/tools/clang-format-vs/ClangFormat.sln"
-}

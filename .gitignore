@@ -1,3 +1,8 @@
+# Carpetas/archivos ocultos (excepto .gitignore y .gitreview)
+.*/
+!.gitignore
+!.gitreview
+
 cscope.*
 *.swap
 .*.sw[po]
