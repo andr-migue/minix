@@ -2,7 +2,6 @@
 .*/
 !.gitignore
 !.gitreview
-orientation
 cscope.*
 *.swap
 .*.sw[po]

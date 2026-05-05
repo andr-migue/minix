@@ -1,0 +1,181 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+
+\geometry{margin=2.5cm}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
+
+\lstdefinestyle{cstyle}{
+  language=C,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{green!40!black},
+  stringstyle=\color{orange!50!black},
+  showstringspaces=false,
+  frame=single,
+  breaklines=true
+}
+
+\title{THE MATCOM MINIX\\\large Informe Técnico}
+\author{
+Estudiante 1: Miguel Zamora\\
+Grupo: [COMPLETAR]\\[4pt]
+Estudiante 2: [COMPLETAR SI APLICA]\\
+Grupo: [COMPLETAR]
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introducción}
+Este proyecto se desarrolló en el contexto de la asignatura Sistemas Operativos con el objetivo de estudiar, desde la práctica, principios de concurrencia, planificación y sistema de archivos sobre una base real: MINIX. A diferencia de ejercicios aislados, la metodología usada exige intervenir código productivo del sistema, recompilar, validar y documentar resultados.
+
+Los objetivos generales fueron: (1) preparar el entorno de trabajo en MINIX, (2) realizar una modificación visible del sistema (\texttt{/etc/motd}), (3) depurar un bug real en la capa de compatibilidad \texttt{pthread\_*}, (4) implementar un comando de usuario (\texttt{tree}) y (5) extender el scheduler para distinguir procesos CPU-bound y aplicar penalización gradual.
+
+Este informe documenta específicamente el estado actual del repositorio \texttt{minix} y los cambios efectivamente registrados en Git, trazándolos contra el \emph{Cronograma de hitos} entregado en \texttt{orientation/Cronograma de hitos.pdf}.
+
+\section{Desarrollo y resultados por componente}
+
+\subsection{Trazabilidad de hitos vs cambios reales en el repositorio}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{2.2cm} >{\raggedright\arraybackslash}p{5.2cm} >{\raggedright\arraybackslash}p{3.0cm} >{\raggedright\arraybackslash}p{4.0cm}}
+\toprule
+\textbf{Hito} & \textbf{Requisito del cronograma} & \textbf{Fecha/commit} & \textbf{Evidencia en repo} \\
+\midrule
+1 & Entorno listo + primera modificación visible (\texttt{/etc/motd}) & 2026-04-16, \texttt{567869d6f} (+ ajustes en \texttt{03b0c367a}, \texttt{06d57c478}, \texttt{60b69581b}) & \texttt{etc/motd} modificado con mensaje personalizado FMATCOM/UH. \\
+2 & Corrección bug \texttt{pthread\_mutex\_trylock} + comando \texttt{tree} & 2026-04-18, \texttt{35634acc7} y fixes posteriores; 2026-04-27, \texttt{67eeae1b7} & Archivos nuevos \texttt{bin/tree/*}; integración en \texttt{bin/Makefile}; fix de recursión en \texttt{pthread\_compat.c}. \\
+3 & Penalización CPU-bound en scheduler + consolidación final & 2026-05-04, \texttt{e3e48819b} & Cambios en \texttt{minix/servers/sched/schedproc.h} y \texttt{schedule.c} con contadores por ventana y recuperación gradual. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Instalación y configuración de VirtualBox y MINIX}
+La evidencia directa de instalación (versión exacta de VirtualBox, parámetros de VM, incidentes de boot/red) no se almacena en este repositorio, por lo que no puede reconstruirse de forma determinista solo desde Git. Sí existe evidencia indirecta de que el entorno quedó operativo, dada la secuencia de commits funcionales sobre componentes del sistema y de espacio de usuario.
+
+Para la entrega final, se recomienda completar esta sección con: versión de VirtualBox, versión exacta de MINIX usada en la VM, RAM, núcleos, disco, red, y cualquier incidencia operativa observada durante la instalación.
+
+\subsection{Personalización del mensaje de bienvenida}
+\textbf{Ruta modificada:} \texttt{/etc/motd} (en el repositorio: \texttt{etc/motd}).
+
+El primer hito introdujo una personalización explícita del mensaje de bienvenida con referencia a la Facultad de Matemática y Computación (UH), cumpliendo el requisito de modificación visible del sistema al iniciar sesión.
+
+\begin{lstlisting}[style=cstyle,caption={Contenido actual relevante de \texttt{etc/motd}}]
+*================================================*
+*         Bienvenido a esto que dice ser un      *
+*               Sistema Operativo.               *
+*      Manicomio de Matematica y Computacion     *
+*       Colina del Terror de La Habana (UH)      *
+*================================================*
+\end{lstlisting}
+
+\subsection{Depuración de un bug en \texttt{pthread}}
+\textbf{Síntoma esperado según orientación:} bloqueo en la segunda llamada a \texttt{pthread\_mutex\_trylock}.
+
+\textbf{Análisis:} la capa \texttt{pthread\_*} en MINIX delega en \texttt{mthread\_*}. En \texttt{minix/lib/libmthread/pthread\_compat.c}, la implementación de \texttt{pthread\_mutex\_trylock} llamaba recursivamente a sí misma, provocando fallo lógico severo.
+
+\textbf{Corrección aplicada (mínima):}
+\begin{lstlisting}[style=cstyle,caption={Diff funcional del fix de pthread}]
+- return pthread_mutex_trylock(mutex);
++ return mthread_mutex_trylock(mutex);
+\end{lstlisting}
+
+El cambio quedó registrado en el commit \texttt{67eeae1b7}. Esta corrección concuerda con el Hito 2 y con la relación requerida \texttt{pthread\_*} (compatibilidad) $\rightarrow$ \texttt{mthread\_*} (implementación real).
+
+\subsection{Implementación del comando \texttt{tree}}
+La implementación se integró como comando de usuario mediante:
+\begin{itemize}[leftmargin=*]
+\item alta de \texttt{bin/tree/tree.c},
+\item alta de \texttt{bin/tree/Makefile},
+\item inclusión de \texttt{tree} en \texttt{bin/Makefile}.
+\end{itemize}
+
+\textbf{Diseño del algoritmo:} recursivo explícito (\texttt{print\_tree(path, depth)}), adecuado por simplicidad y correspondencia directa entre nivel de recursión e indentación visual.
+
+\textbf{Llamadas al sistema usadas:}
+\begin{itemize}[leftmargin=*]
+\item \texttt{opendir}/\texttt{readdir}/\texttt{closedir} para iteración de directorios.
+\item \texttt{lstat} para obtener metadatos sin seguir enlaces simbólicos.
+\end{itemize}
+
+\textbf{Prevención de ciclos:} el código evita descender por symlinks mediante \texttt{!S\_ISLNK(entry\_stats.st\_mode)}, cumpliendo el requisito obligatorio de la guía.
+
+\begin{lstlisting}[style=cstyle,caption={Fragmento clave de \texttt{bin/tree/tree.c}}]
+int check = lstat(fullpath, &entry_stats);
+if (!(check == -1) && S_ISDIR(entry_stats.st_mode) &&
+    !S_ISLNK(entry_stats.st_mode)) {
+    print_tree(fullpath, depth + 1);
+}
+\end{lstlisting}
+
+\subsection{Penalización por uso intensivo de CPU}
+\textbf{Análisis previo y puntos intervenidos:}
+\begin{itemize}[leftmargin=*]
+\item Agotamiento de quantum: \texttt{do\_noquantum()} en \texttt{schedule.c}.
+\item Balance periódico: \texttt{balance\_queues()}.
+\item Estado por proceso: \texttt{struct schedproc} en \texttt{schedproc.h}.
+\end{itemize}
+
+\textbf{Diseño implementado:}
+\begin{itemize}[leftmargin=*]
+\item Ventana temporal ya existente del balanceador (\texttt{BALANCE\_TIMEOUT = 5s}).
+\item Umbral CPU-bound: \texttt{CPU\_BOUND\_QUANTUM\_THRESHOLD = 3}.
+\item Penalización máxima: \texttt{MAX\_PENALTY\_LEVEL = 2}.
+\end{itemize}
+
+\textbf{Cambios de datos por proceso:}
+\begin{lstlisting}[style=cstyle,caption={Campos añadidos en \texttt{schedproc.h}}]
+unsigned base_priority;
+unsigned quantum_count;
+unsigned penalty_level;
+\end{lstlisting}
+
+\textbf{Cambios de lógica:}
+\begin{itemize}[leftmargin=*]
+\item \texttt{do\_noquantum()} incrementa \texttt{quantum\_count} para procesos no de sistema.
+\item \texttt{do\_start\_scheduling()} inicializa \texttt{base\_priority}, \texttt{quantum\_count} y \texttt{penalty\_level}.
+\item \texttt{balance\_queues()} aplica penalización si \texttt{quantum\_count >= 3}, recuperación gradual si \texttt{quantum\_count == 0}, y reinicia contador por ventana.
+\end{itemize}
+
+La modificación corresponde al Hito 3 y materializa la política solicitada en \texttt{Orientación del proyecto.pdf}.
+
+\section{Resultados globales y discusión}
+Desde la perspectiva del repositorio, los tres hitos del cronograma están cubiertos por cambios concretos, versionados y trazables. El Hito 1 queda evidenciado por la personalización de \texttt{motd}; el Hito 2 por la implementación/integración de \texttt{tree} y la corrección de \texttt{pthread\_mutex\_trylock}; y el Hito 3 por la extensión del scheduler con política de penalización CPU-bound por ventanas.
+
+La principal limitación metodológica de este análisis es que se basa en evidencia estática de código y commits (no en ejecución dentro de la VM MINIX en este entorno). Por ello, el cierre formal del informe académico debe incluir anexos de ejecución (salidas del programa de prueba pthread, pruebas de \texttt{tree} en \texttt{.}, \texttt{/usr}, \texttt{../}, y evolución de prioridad en escenarios CPU-bound vs interactivo).
+
+\section{Conclusiones}
+El estado actual del repositorio es coherente con el \emph{Cronograma de hitos}: las funcionalidades objetivo fueron implementadas y quedaron reflejadas en commits fechados dentro del período planificado. Técnicamente, el trabajo aborda cuatro núcleos de aprendizaje de la asignatura: modificación del sistema base (\texttt{motd}), depuración de concurrencia (\texttt{pthread}), desarrollo de herramienta de sistema de archivos (\texttt{tree}) y ajuste de política de planificación (scheduler).
+
+Como mejora recomendada para robustecer la entrega final: agregar un conjunto mínimo de scripts o logs reproducibles de validación experimental para los apartados 2.3, 2.4 y 2.5.
+
+\section{Referencias consultadas}
+\begin{enumerate}[leftmargin=*]
+\item \texttt{orientation/Orientación del proyecto.pdf}
+\item \texttt{orientation/Cronograma de hitos.pdf}
+\item \texttt{orientation/THE MATCOM MINIX\_Informe técnico.pdf}
+\item Código fuente del repositorio MINIX (archivos \texttt{etc/motd}, \texttt{bin/tree/*}, \texttt{minix/lib/libmthread/pthread\_compat.c}, \texttt{minix/servers/sched/*}).
+\item Historial Git del proyecto (commits entre \texttt{567869d6f} y \texttt{7c92edd4e}).
+\end{enumerate}
+
+\section{Declaración de uso de IA}
+Se utilizó IA generativa como apoyo para: (1) sintetizar requisitos de los documentos PDF, (2) estructurar y redactar técnicamente el informe en \LaTeX, y (3) organizar la trazabilidad entre hitos y commits del repositorio. Las decisiones de implementación documentadas, así como los cambios de código referenciados, provienen del historial real del repositorio analizado.
+
+\section{Anexos (si aplica)}
+\subsection*{A. Línea de tiempo resumida de commits del proyecto}
+\begin{itemize}[leftmargin=*]
+\item \texttt{2026-04-16}: \texttt{567869d6f} (\emph{1er hito}) -- modificación inicial de \texttt{motd}.
+\item \texttt{2026-04-18}: \texttt{35634acc7} (\emph{2do hito: tree command}) + fixes posteriores en \texttt{tree} y \texttt{motd}.
+\item \texttt{2026-04-27}: \texttt{67eeae1b7} (\emph{fix pthread}).
+\item \texttt{2026-05-04}: \texttt{e3e48819b} (\emph{scheduler CPU-bound penalty}) + commits de limpieza de \texttt{.gitignore}.
+\end{itemize}
+
+\end{document}
