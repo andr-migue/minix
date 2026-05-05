@@ -1,3 +1,5 @@
+# Ignore documentation folder
+docs/
 # Carpetas/archivos ocultos (excepto .gitignore y .gitreview)
 .*/
 !.gitignore

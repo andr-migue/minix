@@ -17,6 +17,10 @@ static unsigned balance_timeout;
 
 #define BALANCE_TIMEOUT	5 /* how often to balance queues in seconds */
 
+/* CPU-bound process penalty mechanism */
+#define CPU_BOUND_QUANTUM_THRESHOLD 3 /* quantums to trigger penalty */
+#define MAX_PENALTY_LEVEL 2 /* maximum penalty levels */
+
 static int schedule_process(struct schedproc * rmp, unsigned flags);
 
 #define SCHEDULE_CHANGE_PRIO	0x1
@@ -96,6 +100,12 @@ int do_noquantum(message *m_ptr)
 	}
 
 	rmp = &schedproc[proc_nr_n];
+	
+	/* Count full quantum consumed by this process */
+	if (!is_system_proc(rmp)) {
+		rmp->quantum_count++;
+	}
+	
 	if (rmp->priority < MIN_USER_Q) {
 		rmp->priority += 1; /* lower priority */
 	}
@@ -165,6 +175,11 @@ int do_start_scheduling(message *m_ptr)
 		return EINVAL;
 	}
 
+	/* Initialize penalty mechanism fields */
+	rmp->base_priority = USER_Q;
+	rmp->quantum_count = 0;
+	rmp->penalty_level = 0;
+	
 	/* Inherit current priority and time slice from parent. Since there
 	 * is currently only one scheduler scheduling the whole system, this
 	 * value is local and we assert that the parent endpoint is valid */
@@ -193,7 +208,10 @@ int do_start_scheduling(message *m_ptr)
 		 * quanum and priority are set explicitly rather than inherited 
 		 * from the parent */
 		rmp->priority   = rmp->max_priority;
+		rmp->base_priority = rmp->max_priority;
 		rmp->time_slice = m_ptr->m_lsys_sched_scheduling_start.quantum;
+		rmp->quantum_count = 0;
+		rmp->penalty_level = 0;
 		break;
 		
 	case SCHEDULING_INHERIT:
@@ -205,7 +223,10 @@ int do_start_scheduling(message *m_ptr)
 			return rv;
 
 		rmp->priority = schedproc[parent_nr_n].priority;
+		rmp->base_priority = schedproc[parent_nr_n].priority;
 		rmp->time_slice = schedproc[parent_nr_n].time_slice;
+		rmp->quantum_count = 0;
+		rmp->penalty_level = 0;
 		break;
 		
 	default: 
@@ -348,15 +369,53 @@ void init_scheduling(void)
 /* This function in called every N ticks to rebalance the queues. The current
  * scheduler bumps processes down one priority when ever they run out of
  * quantum. This function will find all proccesses that have been bumped down,
- * and pulls them back up. This default policy will soon be changed.
+ * and pulls them back up. 
+ *
+ * Additionally, this function implements CPU-bound process penalty:
+ * - If a process consumed CPU_BOUND_QUANTUM_THRESHOLD full quantums in the
+ *   current window, it gets penalized (priority reduced) up to MAX_PENALTY_LEVEL
+ * - If a process did not consume any full quantums, it can recover gradually
+ *   (priority improved) back to its base priority
  */
 void balance_queues(void)
 {
 	struct schedproc *rmp;
 	int r, proc_nr;
+	unsigned new_priority;
 
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
-		if (rmp->flags & IN_USE) {
+		if (rmp->flags & IN_USE && !is_system_proc(rmp)) {
+			/* CPU-bound penalty mechanism */
+			if (rmp->quantum_count >= CPU_BOUND_QUANTUM_THRESHOLD) {
+				/* Process is CPU-bound, penalize it */
+				if (rmp->penalty_level < MAX_PENALTY_LEVEL) {
+					rmp->penalty_level++;
+				}
+				/* Apply penalty: lower priority (increase queue number) */
+				new_priority = rmp->base_priority + rmp->penalty_level;
+				if (new_priority < MIN_USER_Q) {
+					new_priority = MIN_USER_Q;
+				}
+				if (rmp->priority != new_priority) {
+					rmp->priority = new_priority;
+					schedule_process_local(rmp);
+				}
+			} else if (rmp->quantum_count == 0 && rmp->penalty_level > 0) {
+				/* Process is not CPU-bound, recover gradually */
+				rmp->penalty_level--;
+				new_priority = rmp->base_priority + rmp->penalty_level;
+				if (new_priority > rmp->max_priority) {
+					new_priority = rmp->max_priority;
+				}
+				if (rmp->priority != new_priority) {
+					rmp->priority = new_priority;
+					schedule_process_local(rmp);
+				}
+			}
+			/* Reset quantum counter for next window */
+			rmp->quantum_count = 0;
+		} else if (rmp->flags & IN_USE) {
+			/* Handle system processes: pull them back up if needed */
 			if (rmp->priority > rmp->max_priority) {
 				rmp->priority -= 1; /* increase priority */
 				schedule_process_local(rmp);
