@@ -10,8 +10,8 @@
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \babel@aux{spanish}{}
 \gdef \LT@i {\LT@entry 
-    {1}{140.0374pt}\LT@entry 
-    {1}{268.0748pt}}
+    {1}{131.50148pt}\LT@entry 
+    {1}{276.6107pt}}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introducci\'on}{2}{section.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {2}Arquitectura del scheduler en MINIX}{2}{section.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}El scheduler como servidor de espacio de usuario}{2}{subsection.2.1}\protected@file@percent }
@@ -19,64 +19,61 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Convenci\'on de prioridades}{3}{subsection.2.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {3}Problema: limitaciones del scheduler original}{3}{section.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Comportamiento antes de la modificaci\'on}{3}{subsection.3.1}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}do\_noquantum() antes de la modificaci\'on}{3}{lstlisting.1}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}balance\_queues() antes de la modificaci\'on}{3}{lstlisting.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}\texttt  {do\_noquantum()} antes de la modificaci\'on}{3}{lstlisting.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}\texttt  {balance\_queues()} antes de la modificaci\'on}{3}{lstlisting.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Deficiencias identificadas}{4}{subsection.3.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {4}Dise\~no de la soluci\'on}{4}{section.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Idea central: observaci\'on por ventanas temporales}{4}{subsection.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Par\'ametros de la pol\'itica y justificaci\'on}{4}{subsection.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Ventana temporal: 5 segundos.}{4}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Ventana temporal: 5~segundos.}{4}{section*.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Umbral CPU-bound: \texttt  {CPU\_BOUND\_QUANTUM\_THRESHOLD = 3}.}{4}{section*.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Penalizaci\'on m\'axima: \texttt  {MAX\_PENALTY\_LEVEL = 2}.}{5}{section*.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Recuperaci\'on gradual: un nivel por ventana.}{5}{section*.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Zona neutral: \texttt  {quantum\_count} de 1 a 2.}{5}{section*.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Nuevos campos de estado}{5}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Penalizaci\'on m\'axima: \texttt  {MAX\_PENALTY\_LEVEL = 2}.}{4}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Recuperaci\'on gradual: un nivel por ventana.}{4}{section*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Zona neutral: \texttt  {quantum\_count} de 1~a~2.}{4}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Nuevos campos de estado por proceso}{5}{subsection.4.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {5}Implementaci\'on}{5}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Cambio 1: \texttt  {schedproc.h} --- Nuevos campos en la estructura de proceso}{5}{subsection.5.1}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}Diff de schedproc.h}{5}{lstlisting.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Cambio 2: \texttt  {schedule.c} --- Constantes de configuraci\'on}{6}{subsection.5.2}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {4}Constantes de la pol\'itica de penalizaci\'on}{6}{lstlisting.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Cambio 3: \texttt  {do\_noquantum()} --- Punto de observaci\'on}{6}{subsection.5.3}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {5}Diff de do\_noquantum()}{6}{lstlisting.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Cambio~1 --- \texttt  {schedproc.h}: nuevos campos en la estructura}{5}{subsection.5.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}Diff de \texttt  {schedproc.h}}{5}{lstlisting.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Cambio~2 --- \texttt  {schedule.c}: constantes de configuraci\'on}{5}{subsection.5.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4}Constantes de la pol\'itica}{5}{lstlisting.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Cambio~3 --- \texttt  {do\_noquantum()}: punto de observaci\'on}{6}{subsection.5.3}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5}Diff de \texttt  {do\_noquantum()}}{6}{lstlisting.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Por qu\'e la guarda \texttt  {!is\_system\_proc(rmp)}.}{6}{section*.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Por qu\'e no se modifica la l\'ogica original.}{7}{section*.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Cambio 4: \texttt  {do\_start\_scheduling()} --- Inicializaci\'on en tres puntos}{7}{subsection.5.4}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {6}Inicializaci\'on temprana en do\_start\_scheduling()}{7}{lstlisting.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Bloque temprano (antes del \texttt  {switch}).}{7}{lstlisting.6}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {7}Rama SCHEDULING\_START}{7}{lstlisting.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Rama \texttt  {SCHEDULING\_START} (procesos de sistema con prioridad expl\'icita).}{7}{lstlisting.7}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {8}Rama SCHEDULING\_INHERIT}{7}{lstlisting.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Rama \texttt  {SCHEDULING\_INHERIT} (procesos de usuario heredados).}{7}{lstlisting.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Cambio 5: \texttt  {balance\_queues()} --- El coraz\'on de la pol\'itica}{8}{subsection.5.5}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {9}Nueva implementaci\'on completa de balance\_queues()}{8}{lstlisting.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Por qu\'e no se modifica la l\'ogica original.}{6}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Cambio~4 --- \texttt  {do\_start\_scheduling()}: inicializaci\'on}{6}{subsection.5.4}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {6}Inicializaci\'on temprana en \texttt  {do\_start\_scheduling()}}{6}{lstlisting.6}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {7}Rama \texttt  {SCHEDULING\_START}}{7}{lstlisting.7}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {8}Rama \texttt  {SCHEDULING\_INHERIT}}{7}{lstlisting.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Cambio~5 --- \texttt  {balance\_queues()}: coraz\'on de la pol\'itica}{7}{subsection.5.5}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {9}Nueva implementaci\'on de \texttt  {balance\_queues()}}{7}{lstlisting.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Clamp inferior en penalizaci\'on.}{8}{section*.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Clamp superior en recuperaci\'on.}{8}{section*.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Condici\'on \texttt  {rmp->priority != new\_priority}.}{8}{section*.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Reinicio de \texttt  {quantum\_count} fuera del \texttt  {if}/\texttt  {else if}.}{8}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Separaci\'on expl\'icita sistema / usuario.}{8}{section*.14}\protected@file@percent }
 \gdef \LT@ii {\LT@entry 
-    {1}{74.59596pt}\LT@entry 
+    {1}{63.21504pt}\LT@entry 
     {1}{97.35826pt}\LT@entry 
-    {1}{80.28644pt}\LT@entry 
-    {1}{182.71652pt}}
-\@writefile{toc}{\contentsline {paragraph}{Clamp inferior en penalizaci\'on (\texttt  {new\_priority < MIN\_USER\_Q}).}{9}{section*.13}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Clamp superior en recuperaci\'on (\texttt  {new\_priority > rmp->max\_priority}).}{9}{section*.14}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Condici\'on \texttt  {rmp->priority != new\_priority}.}{9}{section*.15}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Reinicio de \texttt  {quantum\_count = 0} fuera del \texttt  {if/else if}.}{9}{section*.16}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Separaci\'on expl\'icita entre procesos de usuario y de sistema.}{9}{section*.17}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Tabla de decisiones}{9}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7}Flujo completo del mecanismo}{10}{section.7}\protected@file@percent }
+    {1}{97.35826pt}\LT@entry 
+    {1}{174.18062pt}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Tabla de decisiones de \texttt  {balance\_queues}}{9}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Flujo completo del mecanismo}{9}{section.7}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Ejemplo num\'erico de evoluci\'on de prioridad}{10}{subsection.7.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {8}Validaci\'on experimental}{11}{section.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Programas de prueba}{11}{subsection.8.1}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {10}cpu\_bound.c}{11}{lstlisting.10}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {11}interactive.c}{11}{lstlisting.11}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Procedimiento}{11}{subsection.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Validaci\'on experimental}{10}{section.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Programas de prueba}{10}{subsection.8.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {10}\texttt  {cpu\_bound.c}}{10}{lstlisting.10}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {11}\texttt  {interactive.c}}{10}{lstlisting.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Procedimiento}{10}{subsection.8.2}\protected@file@percent }
 \gdef \LT@iii {\LT@entry 
     {1}{68.9055pt}\LT@entry 
-    {1}{111.58464pt}\LT@entry 
-    {1}{111.58464pt}\LT@entry 
-    {1}{140.0374pt}}
+    {1}{105.89418pt}\LT@entry 
+    {1}{105.89418pt}\LT@entry 
+    {1}{148.5733pt}}
 \gdef \LT@iv {\LT@entry 
-    {1}{140.0374pt}\LT@entry 
-    {1}{83.13188pt}\LT@entry 
-    {1}{196.9429pt}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Resultados}{12}{subsection.8.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {9}Resumen de cambios}{12}{section.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {10}Conclusiones}{13}{section.10}\protected@file@percent }
-\gdef \@abspage@last{13}
+    {1}{177.02606pt}\LT@entry 
+    {1}{77.44142pt}\LT@entry 
+    {1}{165.6447pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Resultados observados}{11}{subsection.8.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Resumen de cambios}{11}{section.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {10}Conclusiones}{12}{section.10}\protected@file@percent }
+\gdef \@abspage@last{12}
