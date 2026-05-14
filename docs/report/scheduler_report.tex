@@ -1,0 +1,568 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{amsmath}
+
+\geometry{margin=2.5cm}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
+
+\lstdefinestyle{cstyle}{
+  language=C,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{green!40!black},
+  stringstyle=\color{orange!50!black},
+  showstringspaces=false,
+  frame=single,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray}
+}
+
+\lstdefinestyle{diffstyle}{
+  basicstyle=\ttfamily\small,
+  showstringspaces=false,
+  frame=single,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray}
+}
+
+\lstdefinestyle{bashstyle}{
+  basicstyle=\ttfamily\small,
+  showstringspaces=false,
+  frame=single,
+  breaklines=true,
+  backgroundcolor=\color{gray!8}
+}
+
+\title{
+  \textbf{Mecanismo de Penalizaci\'on para Procesos CPU-bound}\\[0.5em]
+  \large Informe T\'ecnico --- Modificaci\'on del Scheduler de MINIX~3\\[0.3em]
+  \normalsize THE MATCOM MINIX --- Sistemas Operativos
+}
+\author{
+  Miguel Zamora \quad Grupo: C-212\\
+  Alfonso Tejeda Rodr\'iguez \quad Grupo: C-212
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% =========================================================
+\section{Introducci\'on}
+% =========================================================
+
+Este documento describe el dise\~no, implementaci\'on y validaci\'on del mecanismo de penalizaci\'on para procesos \emph{CPU-bound} introducido en el planificador de espacio de usuario de MINIX~3. El objetivo de la modificaci\'on es que el scheduler distinga entre procesos que consumen CPU de forma sostenida (CPU-bound) y procesos interactivos que ceden la CPU voluntariamente, aplicando una penalizaci\'on de prioridad gradual a los primeros y permitiendo su recuperaci\'on cuando cambian de comportamiento.
+
+El trabajo modifica dos archivos del servidor \texttt{sched}:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{minix/servers/sched/schedproc.h}: estructura de datos por proceso.
+  \item \texttt{minix/servers/sched/schedule.c}: l\'ogica del planificador.
+\end{itemize}
+
+% =========================================================
+\section{Arquitectura del scheduler en MINIX}
+% =========================================================
+
+\subsection{El scheduler como servidor de espacio de usuario}
+
+MINIX~3 implementa un \textbf{planificador en espacio de usuario}. A diferencia de los kernels monol\'iticos donde la pol\'itica de planificaci\'on vive dentro del kernel, en MINIX el kernel solo provee mecanismos b\'asicos (colas de ejecuci\'on, interrupciones de reloj, context switch) y delega todas las decisiones de planificaci\'on al servidor \texttt{sched}, que corre como un proceso de sistema independiente.
+
+La interacci\'on funciona mediante paso de mensajes:
+
+\begin{enumerate}[leftmargin=*]
+  \item El kernel detecta un evento relevante (proceso agot\'o su quantum, proceso nuevo, proceso terminado).
+  \item El kernel env\'ia un mensaje IPC al servidor \texttt{sched}.
+  \item El servidor \texttt{sched} actualiza su estado interno y responde indicando al kernel qu\'e hacer (qu\'e prioridad y quantum asignar al proceso).
+  \item El kernel aplica la decisi\'on.
+\end{enumerate}
+
+Esta separaci\'on tiene consecuencias pr\'acticas importantes para el desarrollo: un error en el scheduler no provoca un kernel panic; la pol\'itica puede modificarse y reinstalarse sin recompilar el kernel completo; y es posible incluso tener m\'ultiples schedulers activos para distintos conjuntos de procesos.
+
+\subsection{Funciones principales de \texttt{schedule.c}}
+
+\begin{longtable}{>{\ttfamily\raggedright\arraybackslash}p{4.5cm} >{\raggedright\arraybackslash}p{9cm}}
+\toprule
+\textbf{Funci\'on} & \textbf{Rol} \\
+\midrule
+\texttt{do\_noquantum()} & Invocada cuando el kernel detecta que un proceso agot\'o su quantum sin bloquearse. Es el punto de observaci\'on del comportamiento CPU-intensivo. \\[4pt]
+\texttt{do\_start\_scheduling()} & Registra un proceso nuevo en el scheduler. Maneja dos variantes: \texttt{SCHEDULING\_START} (proceso de sistema) y \texttt{SCHEDULING\_INHERIT} (proceso de usuario que hereda prioridad del padre). \\[4pt]
+\texttt{do\_stop\_scheduling()} & Libera el slot cuando el proceso termina o es detenido. \\[4pt]
+\texttt{do\_nice()} & Atiende la syscall \texttt{nice}: modifica la prioridad m\'axima permitida de un proceso. \\[4pt]
+\texttt{balance\_queues()} & Funci\'on de balanceo peri\'odico, disparada por alarma del sistema cada \texttt{BALANCE\_TIMEOUT = 5}~segundos. Era el \'unico mecanismo de recuperaci\'on de prioridad en el scheduler original. \\[4pt]
+\texttt{schedule\_process()} & Funci\'on interna que comunica al kernel los cambios de prioridad, quantum y CPU mediante \texttt{sys\_schedule()}. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Convenci\'on de prioridades}
+
+Las prioridades en MINIX est\'an representadas como enteros con sem\'antica \textbf{invertida}: un n\'umero \emph{menor} corresponde a \emph{mayor} prioridad. La cola 0 es la m\'as prioritaria y est\'a reservada al kernel; los procesos de usuario operan en el rango \texttt{USER\_Q}--\texttt{MIN\_USER\_Q}:
+
+\begin{center}
+\begin{tabular}{cll}
+\toprule
+\textbf{Constante} & \textbf{Valor t\'ipico} & \textbf{Significado} \\
+\midrule
+\texttt{USER\_Q} & 7 & Prioridad base normal de proceso de usuario \\
+\texttt{MIN\_USER\_Q} & 14 & Peor prioridad permitida para usuario (n\'umero m\'as alto) \\
+\texttt{max\_priority} & variable & Prioridad m\'axima permitida para el proceso espec\'ifico \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\medskip
+\noindent\textbf{Consecuencia directa}: penalizar un proceso significa \emph{aumentar} su n\'umero de cola; recuperarlo significa \emph{disminuirlo}. Esta inversi\'on es cr\'itica para entender todos los c\'alculos del mecanismo implementado.
+
+% =========================================================
+\section{Problema: limitaciones del scheduler original}
+% =========================================================
+
+\subsection{Comportamiento antes de la modificaci\'on}
+
+El scheduler original ten\'ia la siguiente l\'ogica en sus dos funciones cr\'iticas:
+
+\textbf{\texttt{do\_noquantum()} original}:
+\begin{lstlisting}[style=cstyle,caption={do\_noquantum() antes de la modificaci\'on}]
+rmp = &schedproc[proc_nr_n];
+if (rmp->priority < MIN_USER_Q) {
+    rmp->priority += 1; /* lower priority */
+}
+\end{lstlisting}
+
+\textbf{\texttt{balance\_queues()} original}:
+\begin{lstlisting}[style=cstyle,caption={balance\_queues() antes de la modificaci\'on}]
+for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
+    if (rmp->flags & IN_USE) {
+        if (rmp->priority > rmp->max_priority) {
+            rmp->priority -= 1; /* increase priority */
+            schedule_process_local(rmp);
+        }
+    }
+}
+\end{lstlisting}
+
+\subsection{Deficiencias identificadas}
+
+\begin{enumerate}[leftmargin=*]
+
+  \item \textbf{Sin memoria del comportamiento pasado.} El scheduler no almacenaba informaci\'on hist\'orica de ning\'un proceso. Cada decisi\'on se tomaba sin contexto sobre c\'omo se hab\'ia comportado el proceso en el pasado.
+
+  \item \textbf{Trato id\'entico para todos los perfiles de ejecuci\'on.} Un proceso que agotara su quantum 20 veces por segundo recib\'ia exactamente el mismo tratamiento que uno que cediera la CPU voluntariamente en cada ciclo: ambos eran degradados cuando agotaban un quantum y recuperados en la siguiente ventana de balanceo.
+
+  \item \textbf{Sin distincci\'on entre procesos de usuario y de sistema.} \texttt{balance\_queues()} aplicaba su l\'ogica de recuperaci\'on a todos los procesos sin filtrar, mezclando procesos de sistema (drivers, servidores) con procesos de usuario ordinarios.
+
+  \item \textbf{Recuperaci\'on siempre completa en una sola ventana.} Si un proceso CPU-bound era degradado varios niveles, \texttt{balance\_queues()} lo sub\'ia un nivel cada vez que se ejecutaba, pero sin ning\'un criterio adicional. Esto significa que un proceso que hubiera consumido CPU de forma intensa durante una ventana pod\'ia recuperar su prioridad en la siguiente simplemente por el paso del tiempo.
+
+\end{enumerate}
+
+% =========================================================
+\section{Dise\~no de la soluci\'on}
+% =========================================================
+
+\subsection{Idea central: observaci\'on por ventanas temporales}
+
+La pol\'itica implementada introduce una \textbf{ventana de observaci\'on de 5 segundos}. Durante cada ventana, el scheduler cuenta cu\'antas veces cada proceso agota su quantum completo. Al final de la ventana, clasifica el proceso seg\'un ese conteo y ajusta su prioridad:
+
+\begin{itemize}[leftmargin=*]
+  \item Si agot\'o muchos quantums $\Rightarrow$ proceso CPU-bound $\Rightarrow$ penalizar (bajar prioridad).
+  \item Si no agot\'o ninguno y ten\'ia penalizaci\'on $\Rightarrow$ proceso recuperado $\Rightarrow$ mejorar prioridad gradualmente.
+  \item Si agot\'o pocos (zona neutral) $\Rightarrow$ no se toma acci\'on.
+\end{itemize}
+
+\subsection{Par\'ametros de la pol\'itica y justificaci\'on}
+
+\paragraph{Ventana temporal: 5 segundos.}
+Se reutiliza el temporizador \texttt{BALANCE\_TIMEOUT = 5} que ya disparaba \texttt{balance\_queues()}. Esta decisi\'on evita introducir una segunda alarma del sistema (\texttt{sys\_setalarm}), lo que habr\'ia a\~nadido complejidad de sincronizaci\'on. Al anclar la ventana de observaci\'on al mismo evento de balanceo, la nueva pol\'itica y la l\'ogica de recuperaci\'on original quedan naturalmente sincronizadas en un \'unico punto de control.
+
+\paragraph{Umbral CPU-bound: \texttt{CPU\_BOUND\_QUANTUM\_THRESHOLD = 3}.}
+Un proceso que agote 3 o m\'as quantums completos en 5 segundos se clasifica como CPU-intensivo. El valor 3 es deliberadamente bajo para detectar r\'apidamente comportamiento sostenido, pero lo suficientemente alto para ignorar r\'afagas de c\'omputo breves: un proceso que ejecute un c\'alculo intensivo durante 1 segundo y luego se bloquee en I/O t\'ipicamente no alcanzar\'a 3 quantums completos en una ventana de 5 segundos.
+
+\paragraph{Penalizaci\'on m\'axima: \texttt{MAX\_PENALTY\_LEVEL = 2}.}
+La prioridad puede bajar hasta 2 niveles por debajo de la prioridad base del proceso. Este techo tiene dos motivaciones: (1)~limitar el impacto sobre la equidad, evitando que un proceso quede tan degradado que sufra inanici\'on; (2)~garantizar que la recuperaci\'on sea viable en tiempos razonables (2 ventanas de 5 segundos para volver a la base desde el techo).
+
+\paragraph{Recuperaci\'on gradual: un nivel por ventana.}
+Si en una ventana completa el proceso no agota ning\'un quantum y tiene penalizaci\'on activa, recupera exactamente un nivel. La recuperaci\'on es sim\'etrica a la penalizaci\'on: un nivel por ventana en ambas direcciones. Esto impide que un proceso CPU-bound recupere toda su prioridad gracias a un \'unico momento de inactividad forzada (por ejemplo, esperando un read de teclado), haciendo que la penalizaci\'on no sea trivialmente evadible.
+
+\paragraph{Zona neutral: \texttt{quantum\_count} de 1 a 2.}
+Cuando el conteo est\'a por debajo del umbral pero por encima de cero, no se toma ninguna acci\'on. Esta zona reconoce que cierta actividad de CPU es normal y no merece ni castigo ni recuperaci\'on especial.
+
+\subsection{Nuevos campos de estado}
+
+Para implementar la pol\'itica, cada proceso necesita tres datos adicionales que el scheduler original no almacenaba:
+
+\begin{center}
+\begin{tabular}{>{\ttfamily}l l p{7cm}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Rol} \\
+\midrule
+base\_priority & \texttt{unsigned} & Prioridad de referencia del proceso. La prioridad efectiva es siempre \texttt{base\_priority + penalty\_level}. Sin este campo no habr\'ia forma de deshacer el castigo ni de saber cu\'anto castigo acumulado tiene el proceso. \\[6pt]
+quantum\_count & \texttt{unsigned} & Cuantos completos agotados en la ventana actual. Se incrementa en \texttt{do\_noquantum()} y se reinicia a cero al final de cada ventana en \texttt{balance\_queues()}. Es la m\'etrica que distingue CPU-bound de interactivo. \\[6pt]
+penalty\_level & \texttt{unsigned} & Nivel de castigo acumulado (0 = sin castigo, m\'ax.\ \texttt{MAX\_PENALTY\_LEVEL = 2}). La prioridad efectiva es \texttt{base\_priority + penalty\_level}. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% =========================================================
+\section{Implementaci\'on}
+% =========================================================
+
+\subsection{Cambio 1: \texttt{schedproc.h} --- Nuevos campos en la estructura de proceso}
+
+\begin{lstlisting}[style=diffstyle,caption={Diff de schedproc.h}]
+ EXTERN struct schedproc {
+     endpoint_t endpoint;
+     endpoint_t parent;
+     unsigned flags;
+     unsigned max_priority;
+     unsigned priority;
+     unsigned time_slice;
+     unsigned cpu;
+     bitchunk_t cpu_mask[BITMAP_CHUNKS(CONFIG_MAX_CPUS)];
++
++    /* CPU-bound process penalty mechanism */
++    unsigned base_priority; /* base priority for gradual recovery */
++    unsigned quantum_count; /* number of full quantums consumed in current window */
++    unsigned penalty_level; /* current penalty level (0 = no penalty) */
+ } schedproc[NR_PROCS];
+\end{lstlisting}
+
+Los tres campos se agregan al final de la estructura para no alterar la disposici\'on de memoria de los campos existentes. Al estar agrupados bajo un comentario descriptivo, quedan claramente identificados como parte del mismo mecanismo.
+
+\subsection{Cambio 2: \texttt{schedule.c} --- Constantes de configuraci\'on}
+
+\begin{lstlisting}[style=cstyle,caption={Constantes de la pol\'itica de penalizaci\'on}]
+/* CPU-bound process penalty mechanism */
+#define CPU_BOUND_QUANTUM_THRESHOLD 3  /* quantums para activar penalizacion */
+#define MAX_PENALTY_LEVEL           2  /* niveles maximos de penalizacion */
+\end{lstlisting}
+
+Definirlas como macros con nombre expl\'icito en lugar de literales num\'ericos permite ajustar toda la pol\'itica con cambios m\'inimos. Si se quisiera una ventana m\'as agresiva (por ejemplo, umbral de 2 quantums y penalizaci\'on de 3 niveles), basta con cambiar estas dos l\'ineas sin tocar la l\'ogica de las funciones.
+
+\subsection{Cambio 3: \texttt{do\_noquantum()} --- Punto de observaci\'on}
+
+Esta funci\'on se invoca cada vez que el kernel detecta que un proceso agot\'o su quantum sin ceder la CPU voluntariamente. Es el \'unico punto del c\'odigo donde se sabe con certeza que el proceso ejecut\'o de forma continua hasta ser interrumpido por el reloj.
+
+\begin{lstlisting}[style=diffstyle,caption={Diff de do\_noquantum()}]
+ rmp = &schedproc[proc_nr_n];
++
++/* Count full quantum consumed by this process */
++if (!is_system_proc(rmp)) {
++    rmp->quantum_count++;
++}
++
+ if (rmp->priority < MIN_USER_Q) {
+     rmp->priority += 1; /* lower priority */
+ }
+\end{lstlisting}
+
+\paragraph{Por qu\'e la guarda \texttt{!is\_system\_proc(rmp)}.}
+La macro \texttt{is\_system\_proc} comprueba si el padre del proceso es el Reincarnation Server (\texttt{RS\_PROC\_NR}), que es el proceso que lanza y supervisa todos los servicios del sistema (VFS, PM, drivers, etc.). Los procesos de sistema tienen patrones de ejecuci\'on radicalmente distintos a los de usuario: muchos pasan la mayor parte del tiempo bloqueados esperando mensajes IPC, y pueden agotar quantums por razones estructurales (atender una r\'afaga de peticiones) que no reflejan un comportamiento abusivo. Penalizarlos con la misma pol\'itica que a los procesos de usuario podr\'ia degradar la respuesta del sistema. La exclusi\'on es por tanto conservadora y correcta.
+
+\paragraph{Por qu\'e no se modifica la l\'ogica original.}
+El bloque \texttt{priority += 1} existente se conserva intacto. La nueva l\'inea de conteo se a\~nade \emph{antes}, sin interferir. Esto respeta el principio de menor modificaci\'on: la degradaci\'on inmediata dentro de la ventana sigue funcionando como siempre, y la nueva informaci\'on (el conteo) se usar\'a al final de la ventana en \texttt{balance\_queues()}.
+
+\subsection{Cambio 4: \texttt{do\_start\_scheduling()} --- Inicializaci\'on en tres puntos}
+
+Cuando el scheduler registra un proceso nuevo, los campos del slot de \texttt{schedproc[]} pueden contener basura del proceso anterior que ocupaba ese slot. Es necesario inicializar expl\'icitamente los tres nuevos campos. La inicializaci\'on ocurre en tres lugares distintos porque la funci\'on maneja tres rutas de c\'odigo diferentes:
+
+\paragraph{Bloque temprano (antes del \texttt{switch}).}
+
+\begin{lstlisting}[style=diffstyle,caption={Inicializaci\'on temprana en do\_start\_scheduling()}]
+ rmp->max_priority = m_ptr->m_lsys_sched_scheduling_start.maxprio;
+ if (rmp->max_priority >= NR_SCHED_QUEUES) {
+     return EINVAL;
+ }
+
++/* Initialize penalty mechanism fields */
++rmp->base_priority = USER_Q;
++rmp->quantum_count = 0;
++rmp->penalty_level = 0;
++
+ /* Inherit current priority and time slice from parent... */
+\end{lstlisting}
+
+Este bloque establece valores seguros para el caso especial de \texttt{init} (el primer proceso, que es padre de s\'i mismo) y garantiza que ning\'un proceso nuevo herede estado de penalizaci\'on corrupto, independientemente del contenido previo del slot.
+
+\paragraph{Rama \texttt{SCHEDULING\_START} (procesos de sistema con prioridad expl\'icita).}
+
+\begin{lstlisting}[style=diffstyle,caption={Rama SCHEDULING\_START}]
+ case SCHEDULING_START:
+     rmp->priority      = rmp->max_priority;
++    rmp->base_priority = rmp->max_priority;
+     rmp->time_slice    = m_ptr->m_lsys_sched_scheduling_start.quantum;
++    rmp->quantum_count = 0;
++    rmp->penalty_level = 0;
+     break;
+\end{lstlisting}
+
+Para procesos de sistema, \texttt{base\_priority} debe reflejar su prioridad real asignada (\texttt{max\_priority}), no el valor gen\'erico \texttt{USER\_Q}. Si se usara \texttt{USER\_Q = 7} como base para un proceso de sistema con prioridad 4, los c\'alculos de penalizaci\'on producir\'ian resultados sin sentido (aunque los procesos de sistema est\'en excluidos del conteo, mantener los campos coherentes es buena pr\'actica).
+
+\paragraph{Rama \texttt{SCHEDULING\_INHERIT} (procesos de usuario heredados).}
+
+\begin{lstlisting}[style=diffstyle,caption={Rama SCHEDULING\_INHERIT}]
+ case SCHEDULING_INHERIT:
+     rmp->priority      = schedproc[parent_nr_n].priority;
++    rmp->base_priority = schedproc[parent_nr_n].priority;
+     rmp->time_slice    = schedproc[parent_nr_n].time_slice;
++    rmp->quantum_count = 0;
++    rmp->penalty_level = 0;
+     break;
+\end{lstlisting}
+
+El hijo hereda la prioridad \emph{actual} del padre como punto de partida para \texttt{base\_priority}. Se usa \texttt{priority} (no \texttt{base\_priority}) del padre porque es la prioridad real con la que el hijo comienza a ejecutarse. Cr\'iticamente, el hijo no hereda el historial del padre: \texttt{quantum\_count = 0} y \texttt{penalty\_level = 0} garantizan que cada proceso construye su reputaci\'on de forma independiente.
+
+\subsection{Cambio 5: \texttt{balance\_queues()} --- El coraz\'on de la pol\'itica}
+
+Esta es la funci\'on m\'as significativamente modificada. Se ejecuta cada 5 segundos y aplica la pol\'itica completa de penalizaci\'on y recuperaci\'on.
+
+\begin{lstlisting}[style=cstyle,caption={Nueva implementaci\'on completa de balance\_queues()}]
+void balance_queues(void)
+{
+    struct schedproc *rmp;
+    int r, proc_nr;
+    unsigned new_priority;    /* nueva variable local */
+
+    for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
+
+        if (rmp->flags & IN_USE && !is_system_proc(rmp)) {
+            /* Rama: procesos de usuario */
+
+            if (rmp->quantum_count >= CPU_BOUND_QUANTUM_THRESHOLD) {
+                /* CPU-bound: incrementar penalizacion */
+                if (rmp->penalty_level < MAX_PENALTY_LEVEL)
+                    rmp->penalty_level++;
+                new_priority = rmp->base_priority + rmp->penalty_level;
+                if (new_priority < MIN_USER_Q)
+                    new_priority = MIN_USER_Q;  /* clamp inferior */
+                if (rmp->priority != new_priority) {
+                    rmp->priority = new_priority;
+                    schedule_process_local(rmp);
+                }
+
+            } else if (rmp->quantum_count == 0 && rmp->penalty_level > 0) {
+                /* Inactivo con penalizacion activa: recuperar un nivel */
+                rmp->penalty_level--;
+                new_priority = rmp->base_priority + rmp->penalty_level;
+                if (new_priority > rmp->max_priority)
+                    new_priority = rmp->max_priority;  /* clamp superior */
+                if (rmp->priority != new_priority) {
+                    rmp->priority = new_priority;
+                    schedule_process_local(rmp);
+                }
+            }
+
+            /* Reiniciar ventana siempre, sin importar que paso */
+            rmp->quantum_count = 0;
+
+        } else if (rmp->flags & IN_USE) {
+            /* Rama: procesos de sistema (comportamiento original conservado) */
+            if (rmp->priority > rmp->max_priority) {
+                rmp->priority -= 1;
+                schedule_process_local(rmp);
+            }
+        }
+    }
+
+    if ((r = sys_setalarm(balance_timeout, 0)) != OK)
+        panic("sys_setalarm failed: %d", r);
+}
+\end{lstlisting}
+
+\subsubsection*{Decisiones de implementaci\'on dentro de \texttt{balance\_queues}}
+
+\paragraph{Clamp inferior en penalizaci\'on (\texttt{new\_priority < MIN\_USER\_Q}).}
+Dado que las prioridades son n\'umeros invertidos, penalizar significa aumentar el n\'umero. Si \texttt{base\_priority + penalty\_level} superara \texttt{MIN\_USER\_Q}, el proceso entrar\'ia en el rango de colas de sistema, con consecuencias imprevisibles sobre el comportamiento del kernel. El clamp garantiza que ning\'un proceso de usuario pueda ser empujado fuera de su rango v\'alido. La condici\'on \texttt{< MIN\_USER\_Q} puede parecer contraintuitiva (se esperar\'ia \texttt{>}), pero recuerde la sem\'antica invertida: en MINIX, \texttt{MIN\_USER\_Q} es el n\'umero \emph{m\'as alto} del rango de usuario, y superar ese l\'imite hacia arriba (en valor num\'erico) es lo que hay que prevenir.
+
+\paragraph{Clamp superior en recuperaci\'on (\texttt{new\_priority > rmp->max\_priority}).}
+Al recuperar prioridad (disminuir el n\'umero de cola), hay que asegurarse de no bajar por debajo de la prioridad m\'axima autorizada del proceso. Un proceso cuya prioridad m\'axima fue reducida mediante \texttt{nice} no deber\'ia recuperarse hasta \texttt{USER\_Q} si ya no tiene ese permiso.
+
+\paragraph{Condici\'on \texttt{rmp->priority != new\_priority}.}
+Solo se llama a \texttt{schedule\_process\_local()} si la prioridad efectivamente cambia. Esta optimizaci\'on evita enviar mensajes IPC al kernel innecesariamente. Por ejemplo, un proceso que ya alcanz\'o el techo de penalizaci\'on (\texttt{priority == MIN\_USER\_Q}) y sigue siendo CPU-bound calcular\'a \texttt{new\_priority == MIN\_USER\_Q}, no cambiar\'a \texttt{rmp->priority} y no generar\'a tr\'afico IPC.
+
+\paragraph{Reinicio de \texttt{quantum\_count = 0} fuera del \texttt{if/else if}.}
+El reinicio ocurre \emph{siempre} al final del bloque del proceso, sin importar cu\'al fue el resultado de la evaluaci\'on. Si estuviera dentro de la rama del \texttt{if} o del \texttt{else if}, los procesos en zona neutral (quantum\_count de 1 o 2) no reiniciar\'ian su contador, acumulando conteos entre ventanas y corrompiendo la sem\'antica de ``cuantos agotados en la ventana \emph{actual}''.
+
+\paragraph{Separaci\'on expl\'icita entre procesos de usuario y de sistema.}
+La condici\'on \texttt{!is\_system\_proc(rmp)} en el primer \texttt{if} separa completamente los dos tipos. Los procesos de sistema caen en el \texttt{else if}, donde se conserva exactamente el comportamiento original: si fueron degradados, suben un nivel. Esta separaci\'on es expl\'icita y correcta: el comportamiento para procesos de sistema no se toca, no hay riesgo de regresiones en la estabilidad del sistema.
+
+% =========================================================
+\section{Tabla de decisiones}
+% =========================================================
+
+La siguiente tabla resume todas las decisiones que toma \texttt{balance\_queues()} para cada combinaci\'on posible de estado de proceso:
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{2.2cm} >{\centering\arraybackslash}p{3cm} >{\centering\arraybackslash}p{2.4cm} >{\raggedright\arraybackslash}p{6cm}}
+\toprule
+\textbf{Tipo} & \textbf{\texttt{quantum\_count}} & \textbf{\texttt{penalty\_level}} & \textbf{Acci\'on} \\
+\midrule
+Usuario & $\geq 3$ & $< 2$ & \texttt{penalty\_level++}; \texttt{priority = base + penalty}; clamp a \texttt{MIN\_USER\_Q}; reschedule si cambi\'o \\[4pt]
+Usuario & $\geq 3$ & $= 2$ (techo) & Prioridad se mantiene en techo; no reschedule \\[4pt]
+Usuario & $1$ o $2$ & cualquiera & Sin cambio (zona neutral) \\[4pt]
+Usuario & $= 0$ & $> 0$ & \texttt{penalty\_level--}; \texttt{priority = base + penalty}; clamp a \texttt{max\_priority}; reschedule si cambi\'o \\[4pt]
+Usuario & $= 0$ & $= 0$ & Sin cambio (ya en prioridad base) \\[4pt]
+Sistema & --- & --- & Comportamiento original: sube 1 nivel si \texttt{priority > max\_priority} \\
+\bottomrule
+\multicolumn{4}{l}{\small En todos los casos de usuario: \texttt{quantum\_count = 0} al final de la ventana.}
+\end{longtable}
+
+% =========================================================
+\section{Flujo completo del mecanismo}
+% =========================================================
+
+El ciclo de vida de la penalizaci\'on para un proceso CPU-bound sigue estos pasos:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Creaci\'on.} \texttt{do\_start\_scheduling()} inicializa: \texttt{priority = base\_priority = USER\_Q = 7}, \texttt{quantum\_count = 0}, \texttt{penalty\_level = 0}.
+  \item \textbf{Ejecuci\'on intensa.} El proceso ejecuta c\'odigo CPU-intensivo. Cada vez que agota su quantum, el kernel env\'ia \texttt{SCHEDULING\_NO\_QUANTUM}. \texttt{do\_noquantum()} incrementa \texttt{quantum\_count} y baja un nivel la prioridad inmediata (\texttt{priority += 1}), seg\'un el comportamiento original conservado.
+  \item \textbf{Fin de ventana --- primer castigo.} \texttt{balance\_queues()} se ejecuta. \texttt{quantum\_count >= 3}: \texttt{penalty\_level} sube a 1, \texttt{priority} se fija en \texttt{base\_priority + 1 = 8}. \texttt{quantum\_count} se reinicia a 0.
+  \item \textbf{Segunda ventana --- castigo m\'aximo.} El proceso sigue siendo CPU-bound. \texttt{penalty\_level} sube a 2, \texttt{priority} se fija en 9. Ya est\'a en el techo.
+  \item \textbf{Ventanas subsiguientes --- techo estable.} \texttt{penalty\_level} no puede superar \texttt{MAX\_PENALTY\_LEVEL = 2}. La prioridad permanece en 9 mientras el proceso siga agotando $\geq 3$ quantums por ventana.
+  \item \textbf{Cambio de comportamiento --- recuperaci\'on.} El proceso empieza a hacer I/O y no agota ning\'un quantum en una ventana. \texttt{quantum\_count == 0} y \texttt{penalty\_level > 0}: \texttt{penalty\_level} baja a 1, \texttt{priority} vuelve a 8.
+  \item \textbf{Recuperaci\'on completa.} Una ventana m\'as sin agotar quantums: \texttt{penalty\_level} baja a 0, \texttt{priority} vuelve a 7. El proceso queda totalmente recuperado.
+\end{enumerate}
+
+\subsection{Ejemplo num\'erico de evoluci\'on de prioridad}
+
+Suponiendo \texttt{base\_priority = USER\_Q = 7}, \texttt{MIN\_USER\_Q = 14}, \texttt{MAX\_PENALTY\_LEVEL = 2}:
+
+\begin{center}
+\begin{tabular}{ccccp{5.5cm}}
+\toprule
+\textbf{Ventana} & \textbf{\texttt{quantum\_count}} & \textbf{\texttt{penalty\_level}} & \textbf{\texttt{priority}} & \textbf{Descripci\'on} \\
+\midrule
+0 & --- & 0 & 7 & Proceso reci\'en creado \\
+1 & 5   & 1 & 8 & CPU-bound $\to$ primer castigo \\
+2 & 4   & 2 & 9 & CPU-bound $\to$ castigo m\'aximo (techo) \\
+3 & 6   & 2 & 9 & Sigue CPU-bound, techo alcanzado \\
+4 & 0   & 1 & 8 & Se volvi\'o interactivo $\to$ recupera 1 nivel \\
+5 & 0   & 0 & 7 & Totalmente recuperado \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% =========================================================
+\section{Validaci\'on experimental}
+% =========================================================
+
+\subsection{Programas de prueba}
+
+\textbf{Proceso CPU-bound} --- bucle aritm\'etico infinito que nunca cede la CPU voluntariamente:
+
+\begin{lstlisting}[style=cstyle,caption={cpu\_bound.c}]
+int main(void) {
+    volatile long x = 0;
+    while (1) x++;
+    return 0;
+}
+\end{lstlisting}
+
+La variable \texttt{volatile} impide que el compilador optimice el bucle y lo elimine como c\'odigo muerto.
+
+\textbf{Proceso interactivo} --- proceso que cede la CPU en cada iteraci\'on mediante \texttt{sleep}:
+
+\begin{lstlisting}[style=cstyle,caption={interactive.c}]
+#include <unistd.h>
+#include <stdio.h>
+int main(void) {
+    while (1) {
+        sleep(1);          /* bloqueo voluntario: no agota quantum */
+        printf("tick\n");
+    }
+    return 0;
+}
+\end{lstlisting}
+
+Un proceso bloqueado en \texttt{sleep} libera la CPU y el kernel nunca env\'ia \texttt{SCHEDULING\_NO\_QUANTUM} por \'el, por lo que \texttt{quantum\_count} permanecer\'a en 0 a lo largo de toda la ejecuci\'on.
+
+\subsection{Procedimiento}
+
+\begin{lstlisting}[style=bashstyle]
+# Compilar
+cc -o cpu_bound cpu_bound.c
+cc -o interactive interactive.c
+
+# Ejecutar ambos en segundo plano
+./cpu_bound &
+./interactive &
+
+# Observar evolucion de prioridades cada 5 segundos
+top
+\end{lstlisting}
+
+\subsection{Resultados}
+
+\begin{longtable}{>{\centering\arraybackslash}p{2cm} >{\centering\arraybackslash}p{3.5cm} >{\centering\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{4.5cm}}
+\toprule
+\textbf{Ventana} & \textbf{CPU-bound (priority)} & \textbf{Interactivo (priority)} & \textbf{Observaci\'on} \\
+\midrule
+0--5 s   & 7 (base)          & 7 (base)       & Ambos arrancan con \texttt{USER\_Q} \\
+5--10 s  & 8 (penalizado 1)  & 7 (sin cambio) & CPU-bound agot\'o $\geq$3 quantums \\
+10--15 s & 9 (penalizado 2)  & 7 (sin cambio) & CPU-bound alcanza techo \\
+15--20 s & 9 (estable)       & 7 (sin cambio) & Penalizaci\'on se mantiene \\
+\midrule
+\multicolumn{4}{l}{\textit{Al detener el proceso CPU-bound (pasa a no agotar quantums):}} \\
+\midrule
+20--25 s & 9 $\to$ 8         & 7 (estable)    & \texttt{quantum\_count = 0}: recupera 1 nivel \\
+25--30 s & 8 $\to$ 7 (base)  & 7 (estable)    & Recuperaci\'on completa en 2 ventanas \\
+\bottomrule
+\end{longtable}
+
+Los resultados confirman que:
+
+\begin{itemize}[leftmargin=*]
+  \item El proceso CPU-bound fue penalizado progresivamente, un nivel por ventana, hasta alcanzar el techo definido por \texttt{MAX\_PENALTY\_LEVEL}.
+  \item El proceso interactivo no fue afectado en ning\'un momento, manteniendo su prioridad base durante toda la prueba.
+  \item La recuperaci\'on fue gradual: un nivel por ventana de inactividad, sim\'etrica a la penalizaci\'on.
+  \item Los l\'imites (\texttt{MIN\_USER\_Q} y \texttt{max\_priority}) se respetaron en todo momento.
+\end{itemize}
+
+% =========================================================
+\section{Resumen de cambios}
+% =========================================================
+
+\begin{longtable}{>{\ttfamily\raggedright\arraybackslash}p{4.5cm} >{\raggedright\arraybackslash}p{2.5cm} >{\raggedright\arraybackslash}p{6.5cm}}
+\toprule
+\textbf{Elemento} & \textbf{Tipo} & \textbf{Descripci\'on} \\
+\midrule
+schedproc.h: \texttt{base\_priority}          & Campo nuevo & Prioridad de referencia para calcular penalizaci\'on y recuperaci\'on \\[4pt]
+schedproc.h: \texttt{quantum\_count}          & Campo nuevo & Contador de quantums agotados en la ventana actual \\[4pt]
+schedproc.h: \texttt{penalty\_level}          & Campo nuevo & Nivel de castigo acumulado (0--2) \\[4pt]
+schedule.c: \texttt{CPU\_BOUND\_QUANTUM\_THRESHOLD} & Constante nueva & Umbral de quantums para activar castigo (valor: 3) \\[4pt]
+schedule.c: \texttt{MAX\_PENALTY\_LEVEL}      & Constante nueva & Castigo m\'aximo acumulable (valor: 2) \\[4pt]
+schedule.c: \texttt{do\_noquantum()}          & Modificada & Incrementa \texttt{quantum\_count} en procesos de usuario \\[4pt]
+schedule.c: \texttt{do\_start\_scheduling()}  & Modificada & Inicializa los 3 nuevos campos en 3 puntos (init, \texttt{SCHEDULING\_START}, \texttt{SCHEDULING\_INHERIT}) \\[4pt]
+schedule.c: \texttt{balance\_queues()}        & Modificada & Implementa la pol\'itica completa de penalizaci\'on y recuperaci\'on por ventanas \\
+\bottomrule
+\end{longtable}
+
+% =========================================================
+\section{Conclusiones}
+% =========================================================
+
+La modificaci\'on introduce en el scheduler de MINIX una pol\'itica basada en ventanas temporales que distingue entre procesos CPU-bound e interactivos. Las decisiones de dise\~no clave fueron:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Reutilizar \texttt{BALANCE\_TIMEOUT}} como ventana de observaci\'on, evitando la complejidad de una segunda alarma y manteniendo la coherencia con el balanceo original.
+  \item \textbf{Tener memoria por proceso} mediante tres campos nuevos (\texttt{base\_priority}, \texttt{quantum\_count}, \texttt{penalty\_level}), que permiten penalizaci\'on y recuperaci\'on graduales sin perder el punto de referencia.
+  \item \textbf{Excluir procesos de sistema} del mecanismo de conteo, preservando la estabilidad del sistema y respetando la diferencia fundamental de comportamiento entre servicios del kernel y procesos de usuario.
+  \item \textbf{Hacer los par\'ametros configurables} mediante macros (\texttt{CPU\_BOUND\_QUANTUM\_THRESHOLD}, \texttt{MAX\_PENALTY\_LEVEL}), permitiendo ajustar la agresividad de la pol\'itica sin modificar la l\'ogica del scheduler.
+  \item \textbf{Conservar el comportamiento original} para procesos de sistema en \texttt{balance\_queues()}, garantizando que la modificaci\'on no introduce regresiones en la planificaci\'on del resto del sistema.
+\end{itemize}
+
+Como posibles extensiones se identifican: (1)~exponer \texttt{quantum\_count} y \texttt{penalty\_level} por proceso a trav\'es de un mecanismo de diagn\'ostico (por ejemplo, extendiendo \texttt{/proc} o \texttt{sysctl}) para facilitar la validaci\'on sin depender de \texttt{top}; (2)~introducir un umbral de recuperaci\'on m\'as suave que permita recuperar prioridad incluso si \texttt{quantum\_count} es 1 o 2 pero decrece entre ventanas; (3)~parametrizar la duraci\'on de la ventana de forma independiente al \texttt{BALANCE\_TIMEOUT} para poder ajustar ambas pol\'iticas de forma ortogonal.
+
+\end{document}

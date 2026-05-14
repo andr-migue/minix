@@ -6,8 +6,18 @@
 \contentsline {subsection}{\numberline {2.3}Depuraci\'on de un bug en \texttt {pthread}}{4}{subsection.2.3}%
 \contentsline {subsection}{\numberline {2.4}Implementaci\'on del comando \texttt {tree}}{5}{subsection.2.4}%
 \contentsline {subsection}{\numberline {2.5}Penalizaci\'on por uso intensivo de CPU}{8}{subsection.2.5}%
-\contentsline {section}{\numberline {3}Resultados globales y discusi\'on}{11}{section.3}%
-\contentsline {section}{\numberline {4}Conclusiones}{12}{section.4}%
-\contentsline {section}{\numberline {5}Referencias consultadas}{13}{section.5}%
-\contentsline {section}{\numberline {6}Declaraci\'on de uso de IA}{13}{section.6}%
-\contentsline {section}{\numberline {7}Anexos}{13}{section.7}%
+\contentsline {paragraph}{Convenci\'on de prioridades.}{9}{section*.14}%
+\contentsline {paragraph}{Elecci\'on de la ventana temporal.}{9}{section*.17}%
+\contentsline {paragraph}{Umbral de clasificaci\'on CPU-bound.}{10}{section*.18}%
+\contentsline {paragraph}{M\'aximo de penalizaci\'on.}{10}{section*.19}%
+\contentsline {paragraph}{Recuperaci\'on gradual.}{10}{section*.20}%
+\contentsline {paragraph}{Zona neutral.}{10}{section*.21}%
+\contentsline {paragraph}{A. Constantes de configuraci\'on.}{11}{lstlisting.11}%
+\contentsline {paragraph}{B. \texttt {do\_noquantum()}: punto de observaci\'on.}{11}{section*.25}%
+\contentsline {paragraph}{C. \texttt {do\_start\_scheduling()}: inicializaci\'on en tres puntos.}{11}{section*.26}%
+\contentsline {paragraph}{D. \texttt {balance\_queues()}: el coraz\'on de la pol\'itica.}{12}{section*.27}%
+\contentsline {section}{\numberline {3}Resultados globales y discusi\'on}{15}{section.3}%
+\contentsline {section}{\numberline {4}Conclusiones}{16}{section.4}%
+\contentsline {section}{\numberline {5}Referencias consultadas}{17}{section.5}%
+\contentsline {section}{\numberline {6}Declaraci\'on de uso de IA}{17}{section.6}%
+\contentsline {section}{\numberline {7}Anexos}{17}{section.7}%

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  8 MAY 2026 14:50
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  14 MAY 2026 13:20
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -493,7 +493,34 @@ LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <10.95> not available
 [10]
 
 [11]
-Overfull \hbox (13.71779pt too wide) in paragraph at lines 528--529
+Overfull \hbox (20.37112pt too wide) in paragraph at lines 506--507
+[]\T1/cmr/m/n/10.95 Para pro-ce-sos de sis-tema, \T1/cmtt/m/n/10.95 base_priori
+ty \T1/cmr/m/n/10.95 debe re-fle-jar su pri-or-i-dad real asig-nada (\T1/cmtt/m
+/n/10.95 max_priority\T1/cmr/m/n/10.95 ),
+ []
+
+
+
+[12]
+Overfull \hbox (10.96286pt too wide) in paragraph at lines 579--579
+ []|\T1/cmtt/m/n/10.95 penalty_level| 
+ []
+
+
+
+[13]
+Overfull \hbox (8.0605pt too wide) in paragraph at lines 603--604
+[]\T1/cmr/m/n/10.95 El pro-ceso se crea y \T1/cmtt/m/n/10.95 do_start_schedulin
+g() \T1/cmr/m/n/10.95 ini-cial-iza: \T1/cmtt/m/n/10.95 priority = base_priority
+ = USER_Q
+ []
+
+
+
+[14]
+
+[15]
+Overfull \hbox (13.71779pt too wide) in paragraph at lines 668--669
 \T1/cmr/m/n/10.95 fueron aña-di-dos, la lóg-ica de pe-nal-ización y re-cu-perac
 ión fue im-ple-men-tada en \T1/cmtt/m/n/10.95 balance_queues()\T1/cmr/m/n/10.95
  ,
@@ -501,14 +528,14 @@ ión fue im-ple-men-tada en \T1/cmtt/m/n/10.95 balance_queues()\T1/cmr/m/n/10.95
 
 
 
-[12]
-Overfull \hbox (29.13313pt too wide) in paragraph at lines 554--555
+[16]
+Overfull \hbox (29.13313pt too wide) in paragraph at lines 694--695
 []\T1/cmr/m/n/10.95 MINIX 3 Wiki --- De-vel-oper's Guide. [][]$\T1/cmtt/m/n/10.
 95 https : / / wiki . minix3 . org / doku . php ? id = developersguide :
  []
 
 
-Overfull \hbox (37.06131pt too wide) in paragraph at lines 555--556
+Overfull \hbox (37.06131pt too wide) in paragraph at lines 695--696
 \T1/cmtt/m/n/10.95 orientation/Cronograma de hitos.pdf\T1/cmr/m/n/10.95 , \T1/c
 mtt/m/n/10.95 orientation/THE MATCOM MINIX_Informe técnico.pdf\T1/cmr/m/n/10.95
  . 
@@ -516,7 +543,7 @@ mtt/m/n/10.95 orientation/THE MATCOM MINIX_Informe técnico.pdf\T1/cmr/m/n/10.95
 
 
 
-[13] (./report.aux)
+[17] (./report.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -525,31 +552,33 @@ Package rerunfilecheck Info: File `report.out' has not changed.
 (rerunfilecheck)             Checksum: E286DCC36B6AC30BB732B8BB468F7ECF;2396.
  ) 
 Here is how much of TeX's memory you used:
- 13182 strings out of 473190
- 201173 string characters out of 5715801
+ 13287 strings out of 473190
+ 202601 string characters out of 5715801
  1077898 words of memory out of 5000000
- 36027 multiletter control sequences out of 15000+600000
- 572155 words of font info for 63 fonts, out of 8000000 for 9000
+ 36061 multiletter control sequences out of 15000+600000
+ 572471 words of font info for 64 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,6n,79p,815b,2053s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,6n,79p,945b,2053s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb
-></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
-</usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></
-usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></us
-r/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/
-local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/lo
-cal/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/loca
-l/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/
-texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/te
-xlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb></usr/local/texl
-ive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/local/texliv
-e/2025/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></usr/local/texlive/
-2025/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></usr/local/texlive/20
-25/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on report.pdf (13 pages, 342623 bytes).
+></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><
+/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></
+usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></us
+r/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/
+local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/lo
+cal/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfit1095.pfb></usr/loca
+l/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/local/
+texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/te
+xlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texl
+ive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texliv
+e/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb></usr/local/texlive/
+2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/local/texlive/20
+25/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></usr/local/texlive/2025
+/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></usr/local/texlive/2025/t
+exmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
+Output written on report.pdf (17 pages, 389482 bytes).
 PDF statistics:
- 514 PDF objects out of 1000 (max. 8388607)
- 465 compressed objects within 5 object streams
- 276 named destinations out of 1000 (max. 500000)
+ 621 PDF objects out of 1000 (max. 8388607)
+ 563 compressed objects within 6 object streams
+ 346 named destinations out of 1000 (max. 500000)
  97 words of extra memory for PDF output out of 10000 (max. 10000000)
 
