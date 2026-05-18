@@ -10,6 +10,7 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{enumitem}
+\usepackage{graphicx}
 
 \geometry{margin=2.5cm}
 \hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
@@ -441,7 +442,7 @@ Sistema & --- & --- & Comportamiento original: sube 1 nivel si fue degradado \\
 \textbf{Decisiones de implementaci\'on relevantes}:
 
 \begin{itemize}[leftmargin=*]
-  \item \textbf{Clamp en penalizaci\'on (\texttt{new\_priority < MIN\_USER\_Q})}: las prioridades en MINIX son n\'umeros invertidos. \texttt{MIN\_USER\_Q} es el n\'umero m\'as alto del rango de usuario; valores mayores corresponden a colas de sistema. Si \texttt{base\_priority + penalty\_level} superara \texttt{MIN\_USER\_Q}, el proceso entrar\'ia en rango de sistema con consecuencias imprevisibles. El clamp garantiza que ning\'un proceso de usuario pueda ser empujado fuera de su rango v\'alido. \emph{Nota}: en c\'odigo fuente la condici\'on aparece como \texttt{if (new\_priority < MIN\_USER\_Q)} porque los n\'umeros est\'an invertidos ---un n\'umero ``menor'' (en valor) significa prioridad m\'as alta, por lo que superar \texttt{MIN\_USER\_Q} hacia arriba en n\'umero es la direcci\'on correcta de penalizaci\'on; el clamp es \texttt{new\_priority = MIN\_USER\_Q} cuando se rebasa ese l\'imite.
+  \item \textbf{Clamp en penalizaci\'on (\texttt{new\_priority > MIN\_USER\_Q})}: las prioridades en MINIX son n\'umeros invertidos. \texttt{MIN\_USER\_Q} es el n\'umero m\'as alto del rango de usuario; valores mayores corresponden a colas de sistema. Si \texttt{base\_priority + penalty\_level} superara \texttt{MIN\_USER\_Q}, el proceso entrar\'ia en rango de sistema con consecuencias imprevisibles. El clamp garantiza que ning\'un proceso de usuario pueda ser empujado fuera de su rango v\'alido. En c\'odigo fuente la condici\'on correcta es \texttt{if (new\_priority > MIN\_USER\_Q)} ---como \texttt{MIN\_USER\_Q} es el n\'umero m\'as alto del rango, sobrepasar ese l\'imite significa un n\'umero a\'un mayor, de ah\'i la comparaci\'on con \texttt{>}. \emph{Nota}: durante las pruebas se detect\'o que la versi\'on inicial ten\'ia la condici\'on invertida (\texttt{<} en lugar de \texttt{>}), lo que impid\'ia que el clamp se disparara. Esto fue corregido antes de la validaci\'on experimental.
   \item \textbf{Clamp en recuperaci\'on (\texttt{new\_priority > rmp->max\_priority})}: sim\'etricamente, al recuperar prioridad hay que asegurarse de no superar la prioridad m\'axima autorizada del proceso (\texttt{max\_priority}). Un proceso cuya prioridad m\'axima fue reducida por \texttt{nice} no deber\'ia recuperarse hasta \texttt{USER\_Q} si ya no tiene ese permiso.
   \item \textbf{Condici\'on \texttt{rmp->priority != new\_priority}}: solo se llama a \texttt{schedule\_process\_local()} si la prioridad efectivamente cambia. Esta optimizaci\'on evita enviar mensajes IPC innecesarios al kernel cuando el proceso ya est\'a en la prioridad correcta (p. ej., un proceso en techo de penalizaci\'on que sigue siendo CPU-bound: ya est\'a en \texttt{MIN\_USER\_Q} y no hay que reschedularlo).
   \item \textbf{Reinicio de \texttt{quantum\_count = 0} siempre}: el reinicio ocurre independientemente del resultado de la evaluaci\'on. Si estuviera dentro del \texttt{if}/\texttt{else if}, los procesos en la zona neutral (quantum\_count de 1 o 2) acumular\'ian conteos entre ventanas, corrompiendo la sem\'antica de ``cuantos agotados en la ventana actual''.
@@ -494,6 +495,60 @@ $\geq$15 s & 9 (techo) & 7 (sin cambio) & Penalizaci\'on se mantiene mientras si
 
 Este comportamiento se desprende directamente de la l\'ogica implementada en \texttt{balance\_queues()}: cada ventana de \texttt{BALANCE\_TIMEOUT}~segundos, si \texttt{quantum\_count $\geq$ CPU\_BOUND\_QUANTUM\_THRESHOLD} se incrementa \texttt{penalty\_level} (hasta \texttt{MAX\_PENALTY\_LEVEL}), y si \texttt{quantum\_count == 0} con penalizaci\'on activa se decrementa. La tabla anterior refleja esa l\'ogica aplicada a los par\'ametros definidos en el c\'odigo: \texttt{USER\_Q = 7}, \texttt{CPU\_BOUND\_QUANTUM\_THRESHOLD = 3} y \texttt{MAX\_PENALTY\_LEVEL = 2}.
 
+\subsubsection*{Validaci\'on experimental}
+
+Para verificar el comportamiento del mecanismo dentro de la VM se implementaron dos programas de prueba en \texttt{sched\_test/}:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{\texttt{cpu\_bound.c}}: ejecuta un bucle aritm\'etico infinito (\texttt{while(1) x++}) sin ceder la CPU voluntariamente. Agota su quantum en cada ciclo de planificaci\'on, comportamiento que el scheduler debe detectar y penalizar progresivamente.
+  \item \textbf{\texttt{interactive.c}}: duerme un segundo entre iteraciones (\texttt{sleep(1)}), cediendo la CPU voluntariamente. Nunca agota un quantum completo, por lo que no debe recibir ninguna penalizaci\'on.
+\end{itemize}
+
+Ambos programas se compilaron y ejecutaron en paralelo dentro de la VM:
+
+\begin{lstlisting}[style=bashstyle,caption={Compilaci\'on y ejecuci\'on de los programas de prueba}]
+cd sched_test
+cc -o cpu_bound cpu_bound.c
+cc -o interactive interactive.c
+./cpu_bound &
+./interactive &
+top
+\end{lstlisting}
+
+La validaci\'on se realiz\'o observando las prioridades (\texttt{NICE}) de ambos procesos con \texttt{top} durante varias ventanas de 5~segundos. Las figuras siguientes muestran la evoluci\'on del sistema durante la prueba.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../Screenshot_20260518_102151.png}
+  \caption{Estado inicial del sistema antes de lanzar los procesos de prueba. Todos los procesos de usuario se encuentran en prioridad base (\texttt{NICE=7}). La CPU se muestra mayoritariamente ociosa.}
+  \label{fig:baseline}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../Screenshot_20260518_104504.png}
+  \caption{Sistema con los procesos de prueba en ejecuci\'on. El proceso \texttt{cpu\_bound} comienza a consumir tiempo de CPU de forma sostenida.}
+  \label{fig:running}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../Screenshot_20260518_104918.png}
+  \caption{Primera penalizaci\'on aplicada: el proceso \texttt{cpu\_bound} (PID~644) aparece con \texttt{NICE=8}, un nivel por encima de la prioridad base. El proceso \texttt{interactive} mantiene su prioridad original.}
+  \label{fig:penalty1}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../Screenshot_20260518_104929.png}
+  \caption{Penalizaci\'on m\'axima alcanzada: el proceso \texttt{cpu\_bound} (PID~644) sube a \texttt{NICE=15} (\texttt{MIN\_USER\_Q}, techo del rango de usuario), consumiendo el 44.73\% de MCPU con la peor prioridad posible. La carga de usuario sube al 100\%. El proceso \texttt{interactive} no aparece penalizado.}
+  \label{fig:penalty2}
+\end{figure}
+
+\clearpage
+
+El resultado observado sigue exactamente la tabla te\'orica presentada anteriormente: \texttt{cpu\_bound} es penalizado en ventanas sucesivas de 5~segundos hasta alcanzar \texttt{MIN\_USER\_Q}, mientras que \texttt{interactive} permanece en prioridad base durante toda la prueba. Esto confirma que el mecanismo de penalizaci\'on funciona correctamente en el sistema en ejecuci\'on.
+
 % =========================================================
 \section{Resultados globales y discusi\'on}
 % =========================================================
@@ -504,7 +559,7 @@ Los cuatro componentes del proyecto fueron implementados y funcionan correctamen
   \item \textbf{Personalizaci\'on de \texttt{/etc/motd}:} \emph{completa}. El mensaje personalizado se muestra correctamente al iniciar sesi\'on, con referencia expl\'icita a la Facultad de Matem\'atica y Computaci\'on de la UH.
   \item \textbf{Correcci\'on de \texttt{pthread\_mutex\_trylock}:} \emph{completa}. La causa ra\'iz (recursi\'on directa en lugar de delegaci\'on a \texttt{mthread\_mutex\_trylock}) qued\'o eliminada con una modificaci\'on de una sola l\'inea. El comportamiento resultante es correcto seg\'un la sem\'antica de la funci\'on: la segunda llamada debe retornar \texttt{EDEADLK} en lugar de bloquearse indefinidamente.
   \item \textbf{Comando \texttt{tree}:} \emph{completo}. La herramienta muestra la estructura de directorios recursivamente, respeta la indentaci\'on por nivel, no sigue enlaces simb\'olicos y maneja correctamente errores de permiso.
-  \item \textbf{Penalizaci\'on CPU-bound en el scheduler:} \emph{completa}. Los campos de estado por proceso (\texttt{base\_priority}, \texttt{quantum\_count}, \texttt{penalty\_level}) fueron a\~nadidos a \texttt{schedproc.h} y la l\'ogica de penalizaci\'on y recuperaci\'on gradual fue implementada en \texttt{do\_noquantum()} y \texttt{balance\_queues()}. El comportamiento esperado se desprende directamente del c\'odigo y de los par\'ametros definidos (\texttt{CPU\_BOUND\_QUANTUM\_THRESHOLD = 3}, \texttt{MAX\_PENALTY\_LEVEL = 2}).
+  \item \textbf{Penalizaci\'on CPU-bound en el scheduler:} \emph{completa y validada experimentalmente}. Los campos de estado por proceso (\texttt{base\_priority}, \texttt{quantum\_count}, \texttt{penalty\_level}) fueron a\~nadidos a \texttt{schedproc.h} y la l\'ogica de penalizaci\'on y recuperaci\'on gradual fue implementada en \texttt{do\_noquantum()} y \texttt{balance\_queues()}. La validaci\'on mediante los programas \texttt{cpu\_bound} e \texttt{interactive} confirm\'o el comportamiento predicho: el proceso CPU-intensivo fue penalizado hasta \texttt{MIN\_USER\_Q} en ventanas sucesivas de 5~segundos, mientras el proceso interactivo mantuvo su prioridad base sin cambios (v\'ease figuras~\ref{fig:penalty1} y~\ref{fig:penalty2}). Durante las pruebas se detect\'o y corrigi\'o un bug en la condici\'on de clamp de \texttt{balance\_queues()} (\texttt{<} en lugar de \texttt{>}), que imped\'ia que el l\'imite de penalizaci\'on se aplicara correctamente.
 \end{itemize}
 
 La principal dificultad t\'ecnica encontrada fue comprender el flujo de mensajes entre el kernel y el servidor \texttt{sched}: el kernel no llama directamente a funciones del scheduler, sino que env\'ia un mensaje de tipo \texttt{SCHEDULING\_NO\_QUANTUM} cuando un proceso agota su quantum. Solo al entender este mecanismo fue posible identificar \texttt{do\_noquantum()} como el punto correcto para incrementar el contador. Una confusi\'on inicial llev\'o a considerar modificar directamente \texttt{minix/kernel/proc.c}, lo que habr\'ia sido incorrecto dado que el objetivo era modificar el planificador de espacio de usuario.
