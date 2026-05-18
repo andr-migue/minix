@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.5.4)  18 MAY 2026 13:24
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.5.4)  18 MAY 2026 13:31
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -505,11 +505,6 @@ Overfull \hbox (29.13313pt too wide) in paragraph at lines 522--523
 []\T1/cmr/m/n/10.95 MINIX 3 Wiki --- De-vel-oper's Guide. [][]$\T1/cmtt/m/n/10.95 https : / / wiki . minix3 . org / doku . php ? id = developersguide :
  []
 
-
-Overfull \hbox (37.06131pt too wide) in paragraph at lines 523--524
-\T1/cmtt/m/n/10.95 orientation/Cronograma de hitos.pdf\T1/cmr/m/n/10.95 , \T1/cmtt/m/n/10.95 orientation/THE MATCOM MINIX_Informe técnico.pdf\T1/cmr/m/n/10.95 . 
- []
-
 [15] (./report.aux)
  ***********
 LaTeX2e <2025-11-01>
@@ -527,7 +522,7 @@ Here is how much of TeX's memory you used:
  14 hyphenation exceptions out of 8191
  75i,6n,79p,1077b,1298s stack positions out of 10000i,1000n,20000p,200000b,200000s
  </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm0800.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecit1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm0600.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1200.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1000.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecbx1200.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecti1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecbx1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecbx1440.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm1200.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm1728.600pk></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on report.pdf (15 pages, 2699349 bytes).
+Output written on report.pdf (15 pages, 2699323 bytes).
 PDF statistics:
  876 PDF objects out of 1000 (max. 8388607)
  359 compressed objects within 4 object streams
