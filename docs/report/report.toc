@@ -1,13 +1,13 @@
 \babel@toc {english}{}\relax 
 \contentsline {section}{\numberline {1}Introducci\'on}{2}{section.1}%
 \contentsline {section}{\numberline {2}Desarrollo y resultados por componente}{2}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Instalaci\'on y configuraci\'on de VirtualBox y MINIX}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.1}Instalaci\'on y configuraci\'on de VMware y MINIX}{2}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}Personalizaci\'on del mensaje de bienvenida}{3}{subsection.2.2}%
 \contentsline {subsection}{\numberline {2.3}Depuraci\'on de un bug en \texttt {pthread}}{3}{subsection.2.3}%
 \contentsline {subsection}{\numberline {2.4}Implementaci\'on del comando \texttt {tree}}{5}{subsection.2.4}%
-\contentsline {subsection}{\numberline {2.5}Penalizaci\'on por uso intensivo de CPU}{7}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.5}Penalizaci\'on por uso intensivo de CPU}{6}{subsection.2.5}%
 \contentsline {paragraph}{Convenci\'on de prioridades.}{7}{section*.14}%
-\contentsline {paragraph}{Elecci\'on de la ventana temporal.}{8}{section*.17}%
+\contentsline {paragraph}{Elecci\'on de la ventana temporal.}{7}{section*.17}%
 \contentsline {paragraph}{Umbral de clasificaci\'on CPU-bound.}{8}{section*.18}%
 \contentsline {paragraph}{M\'aximo de penalizaci\'on.}{8}{section*.19}%
 \contentsline {paragraph}{Recuperaci\'on gradual.}{8}{section*.20}%

@@ -72,20 +72,20 @@ Los objetivos espec\'ificos del proyecto fueron cuatro: (1)~preparar el entorno 
 En esta secci\'on se documenta, para cada uno de los puntos requeridos, el proceso completo de trabajo: desde el an\'alisis inicial y las decisiones de dise\~no, pasando por los cambios concretos realizados en el c\'odigo o la configuraci\'on del sistema, hasta la verificaci\'on experimental de su correcto funcionamiento.
 
 % ---------------------------------------------------------
-\subsection{Instalaci\'on y configuraci\'on de VirtualBox y MINIX}
+\subsection{Instalaci\'on y configuraci\'on de VMware y MINIX}
 % ---------------------------------------------------------
 
-El entorno de trabajo se prepar\'o instalando Oracle VirtualBox~7.0.14 sobre el sistema anfitri\'on (Ubuntu~22.04~LTS), y creando una m\'aquina virtual para ejecutar MINIX~3.3.0, la \'ultima versi\'on estable disponible en \url{https://www.minix3.org}. La imagen ISO utilizada fue \texttt{minix\_R3.3.0-588a35b.iso}, descargada del repositorio oficial del proyecto.
+El entorno de trabajo se prepar\'o instalando VMware Workstation sobre el sistema anfitri\'on (CachyOS, distribuci\'on basada en Arch Linux), y creando una m\'aquina virtual para ejecutar MINIX~3.3.0, la \'ultima versi\'on estable disponible en \url{https://www.minix3.org}. La imagen ISO utilizada fue \texttt{minix\_R3.3.0-588a35b.iso}, descargada del repositorio oficial del proyecto.
 
 Los par\'ametros de configuraci\'on de la m\'aquina virtual fueron los siguientes:
 \begin{itemize}[leftmargin=*]
-  \item \textbf{Memoria RAM:} 1024~MB. Suficiente para compilar el sistema (\texttt{make build}) y ejecutar las pruebas de planificaci\'on sin saturar el anfitri\'on.
-  \item \textbf{N\'ucleos de CPU:} 1. Consistente con el objetivo did\'actico; adem\'as, usar un \'unico n\'ucleo simplifica la observaci\'on de la evoluci\'on de prioridades en el scheduler, ya que elimina la variabilidad introducida por la planificaci\'on SMP.
-  \item \textbf{Disco duro virtual:} 8~GB, formato VDI, asignaci\'on din\'amica. Este tama\~no es suficiente para alojar el \'arbol fuente completo y los objetos generados por la compilaci\'on.
+  \item \textbf{Memoria RAM:} 1~GB.
+  \item \textbf{N\'ucleos de CPU:} 2. Consistente con el objetivo did\'actico; adem\'as, usar dos n\'ucleos simplifica la observaci\'on de la evoluci\'on de prioridades en el scheduler.
+  \item \textbf{Disco duro virtual:} 4~GB. Suficiente para alojar el \'arbol fuente completo y los objetos generados por la compilaci\'on.
   \item \textbf{Red:} NAT. Permite acceso a Internet desde la VM para descargar paquetes mediante \texttt{pkgin}, sin exponer la VM directamente a la red local.
 \end{itemize}
 
-La instalaci\'on de MINIX sigui\'o los pasos de la gu\'ia oficial: arranque desde ISO, particionado autom\'atico con \texttt{autopart}, instalaci\'on del conjunto de paquetes base y primera recompilaci\'on completa del sistema con \texttt{make build}. Tras la instalaci\'on base se configuraron las herramientas de desarrollo necesarias:
+La instalaci\'on de MINIX sigui\'o los pasos de la gu\'ia oficial: arranque desde ISO, particionado autom\'atico con \texttt{autopart} e instalaci\'on del conjunto de paquetes base. Tras la instalaci\'on base se configuraron las herramientas de desarrollo necesarias:
 
 \begin{lstlisting}[style=bashstyle,caption={Instalaci\'on de herramientas de desarrollo en MINIX}]
 pkgin update
