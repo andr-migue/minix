@@ -120,19 +120,7 @@ El contenido final del archivo es:
 *================================================*
 \end{lstlisting}
 
-La verificaci\'on se realiz\'o cerrando la sesi\'on con \texttt{exit} e iniciando sesi\'on nuevamente con el usuario \texttt{root}. El mensaje apareci\'o correctamente en el terminal inmediatamente despu\'es del prompt de \emph{login}, tal como se muestra a continuaci\'on:
-
-\begin{lstlisting}[style=bashstyle,caption={Salida del terminal al iniciar sesi\'on}]
-login: root
-Password:
-*================================================*
-*         Bienvenido a esto que dice ser un      *
-*               Sistema Operativo.               *
-*      Manicomio de Matematica y Computacion     *
-*       Colina del Terror de La Habana (UH)      *
-*================================================*
-#
-\end{lstlisting}
+La verificaci\'on se realiz\'o cerrando la sesi\'on con \texttt{exit} e iniciando sesi\'on nuevamente con el usuario \texttt{root}. El mensaje apareci\'o correctamente en el terminal inmediatamente despu\'es del prompt de \emph{login}.
 
 No se encontraron restricciones de permisos adicionales: el archivo es editable directamente por \texttt{root} sin necesidad de montar el sistema de archivos en modo especial.
 
@@ -237,70 +225,7 @@ La condici\'on \texttt{!S\_ISLNK(entry\_stats.st\_mode)} garantiza que, aunque l
 
 \subsubsection*{C\'odigo}
 
-\begin{lstlisting}[style=cstyle,caption={Implementaci\'on completa de \texttt{bin/tree/tree.c}}]
-#include <stdio.h>
-#include <string.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <limits.h>
-#include <unistd.h>
-
-/* Imprime recursivamente el arbol de directorios.
- * path:  directorio raiz de este nivel de recursion.
- * depth: nivel actual (0 = raiz, 1 = hijos directos, ...). */
-static void print_tree(const char *path, int depth)
-{
-    DIR *dir = opendir(path);
-    if (dir == NULL) {
-        perror(path);
-        return;
-    }
-
-    struct stat entry_stats;
-    char fullpath[PATH_MAX];
-    struct dirent *entry;
-
-    while ((entry = readdir(dir)) != NULL) {
-        /* Omitir . y .. para evitar recursion hacia el padre */
-        if (strcmp(entry->d_name, ".") == 0 ||
-            strcmp(entry->d_name, "..") == 0)
-            continue;
-
-        /* Imprimir indentacion proporcional a la profundidad */
-        for (int i = 0; i < depth; i++)
-            printf("|  ");
-        printf("|-- %s\n", entry->d_name);
-
-        /* Construir ruta completa y determinar si es directorio real */
-        snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
-        int check = lstat(fullpath, &entry_stats);
-
-        /* Solo recursar si es directorio y NO es un enlace simbolico */
-        if (!(check == -1) && S_ISDIR(entry_stats.st_mode) &&
-            !S_ISLNK(entry_stats.st_mode))
-            print_tree(fullpath, depth + 1);
-    }
-
-    closedir(dir);
-}
-
-int main(int argc, char *argv[])
-{
-    const char *path;
-    char cwd[PATH_MAX];
-
-    if (argc > 1)
-        path = argv[1];
-    else {
-        getcwd(cwd, sizeof(cwd));
-        path = cwd;
-    }
-
-    printf("%s\n", path);
-    print_tree(path, 0);
-    return 0;
-}
-\end{lstlisting}
+La implementaci\'on completa se encuentra en \texttt{bin/tree/tree.c} del repositorio del proyecto: \url{https://github.com/andr-migue/minix}.
 
 \subsubsection*{Ejemplos de ejecuci\'on}
 
@@ -405,12 +330,12 @@ unsigned penalty_level; /* current penalty level (0 = no penalty) */
 
 \subsubsection*{Cambios en \texttt{schedule.c}}
 
-\paragraph{A. Constantes de configuraci\'on.}
+\paragraph{A. Constantes de configuraci\'on.}\leavevmode\par
 
 \begin{lstlisting}[style=cstyle,caption={Constantes de la pol\'itica de penalizaci\'on}]
 /* CPU-bound process penalty mechanism */
-#define CPU_BOUND_QUANTUM_THRESHOLD 3  /* quantums para activar penalizacion */
-#define MAX_PENALTY_LEVEL           2  /* niveles maximos de penalizacion */
+#define CPU_BOUND_QUANTUM_THRESHOLD 3  /* quantums para penalizar */
+#define MAX_PENALTY_LEVEL           2  /* niveles max de penalizacion */
 \end{lstlisting}
 
 Definirlas como macros con nombre expl\'icito en lugar de literales num\'ericos permite ajustar la pol\'itica con un solo cambio en el c\'odigo fuente sin afectar la l\'ogica de las funciones. Si se quisiera una ventana m\'as agresiva (por ejemplo, umbral de 2 quantums y penalizaci\'on de 3 niveles), basta con cambiar estas dos l\'ineas.
@@ -481,69 +406,31 @@ El hijo hereda la prioridad \emph{actual} del padre como punto de partida. Se us
 
 \paragraph{D. \texttt{balance\_queues()}: el coraz\'on de la pol\'itica.}
 
-Esta es la funci\'on m\'as significativamente modificada. Se ejecuta cada 5 segundos y aplica la pol\'itica completa. El c\'odigo completo despu\'es de la modificaci\'on:
-
-\begin{lstlisting}[style=cstyle,caption={Nueva l\'ogica de \texttt{balance\_queues()}}]
-void balance_queues(void)
-{
-    struct schedproc *rmp;
-    int r, proc_nr;
-    unsigned new_priority;
-
-    for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
-
-        if (rmp->flags & IN_USE && !is_system_proc(rmp)) {
-            /* Rama: procesos de usuario */
-            if (rmp->quantum_count >= CPU_BOUND_QUANTUM_THRESHOLD) {
-                /* CPU-bound: incrementar penalizacion */
-                if (rmp->penalty_level < MAX_PENALTY_LEVEL)
-                    rmp->penalty_level++;
-                new_priority = rmp->base_priority + rmp->penalty_level;
-                if (new_priority < MIN_USER_Q)
-                    new_priority = MIN_USER_Q;  /* clamp inferior */
-                if (rmp->priority != new_priority) {
-                    rmp->priority = new_priority;
-                    schedule_process_local(rmp);
-                }
-            } else if (rmp->quantum_count == 0 && rmp->penalty_level > 0) {
-                /* Inactivo con penalizacion: recuperar un nivel */
-                rmp->penalty_level--;
-                new_priority = rmp->base_priority + rmp->penalty_level;
-                if (new_priority > rmp->max_priority)
-                    new_priority = rmp->max_priority;  /* clamp superior */
-                if (rmp->priority != new_priority) {
-                    rmp->priority = new_priority;
-                    schedule_process_local(rmp);
-                }
-            }
-            rmp->quantum_count = 0;  /* reiniciar ventana siempre */
-
-        } else if (rmp->flags & IN_USE) {
-            /* Rama: procesos de sistema (comportamiento original) */
-            if (rmp->priority > rmp->max_priority) {
-                rmp->priority -= 1;
-                schedule_process_local(rmp);
-            }
-        }
-    }
-
-    if ((r = sys_setalarm(balance_timeout, 0)) != OK)
-        panic("sys_setalarm failed: %d", r);
-}
-\end{lstlisting}
+Esta es la funci\'on m\'as significativamente modificada. Se ejecuta cada 5 segundos y aplica la pol\'itica completa. La implementaci\'on se encuentra en \texttt{minix/servers/sched/schedule.c} del repositorio: \url{https://github.com/andr-migue/minix}.
 
 La tabla siguiente resume las decisiones tomadas en cada caso:
 
-\begin{longtable}{>{\raggedright\arraybackslash}p{2.5cm} >{\centering\arraybackslash}p{2.8cm} >{\centering\arraybackslash}p{2.2cm} >{\raggedright\arraybackslash}p{5.5cm}}
-\toprule
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.5cm}|>{\centering\arraybackslash}p{2.8cm}|>{\centering\arraybackslash}p{2.2cm}|>{\raggedright\arraybackslash}p{5.5cm}|}
+\hline
 \textbf{Tipo} & \textbf{\texttt{quantum\_count}} & \textbf{\texttt{penalty\_level}} & \textbf{Acci\'on} \\
-\midrule
+\hline
+\endfirsthead
+\hline
+\textbf{Tipo} & \textbf{\texttt{quantum\_count}} & \textbf{\texttt{penalty\_level}} & \textbf{Acci\'on} \\
+\hline
+\endhead
+\hline
+\endfoot
 Usuario & $\geq 3$ & cualquiera & \texttt{penalty\_level++} (m\'ax. 2); \texttt{priority = base + penalty}; clamp a \texttt{MIN\_USER\_Q} \\
+\hline
 Usuario & $= 0$ & $> 0$ & \texttt{penalty\_level--}; \texttt{priority = base + penalty}; clamp a \texttt{max\_priority} \\
+\hline
 Usuario & 1 o 2 & cualquiera & Sin cambio (zona neutral) \\
+\hline
 Usuario & cualquiera & $= 0$ & Sin cambio (ya en prioridad base) \\
+\hline
 Sistema & --- & --- & Comportamiento original: sube 1 nivel si fue degradado \\
-\bottomrule
+\hline
 \end{longtable}
 
 \textbf{Decisiones de implementaci\'on relevantes}:
@@ -597,20 +484,31 @@ int main(void) {
 
 Ambos programas se ejecutaron simult\'aneamente y se observ\'o la evoluci\'on de prioridad mediante \texttt{top}. La tabla siguiente resume el comportamiento esperado y observado (prioridades en escala MINIX: menor = mejor):
 
-\begin{longtable}{>{\centering\arraybackslash}p{2.2cm} >{\centering\arraybackslash}p{3.5cm} >{\centering\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{4.5cm}}
-\toprule
+\begin{longtable}{|>{\centering\arraybackslash}p{2.2cm}|>{\centering\arraybackslash}p{3.5cm}|>{\centering\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{4.5cm}|}
+\hline
 \textbf{Ventana} & \textbf{CPU-bound (priority)} & \textbf{Interactivo (priority)} & \textbf{Observaci\'on} \\
-\midrule
+\hline
+\endfirsthead
+\hline
+\textbf{Ventana} & \textbf{CPU-bound (priority)} & \textbf{Interactivo (priority)} & \textbf{Observaci\'on} \\
+\hline
+\endhead
+\hline
+\endfoot
 0--5 s   & 7 (base) & 7 (base) & Ambos arrancan con \texttt{USER\_Q} \\
+\hline
 5--10 s  & 8 (penalizado~1) & 7 (sin cambio) & CPU-bound agot\'o $\geq$3 quantums; interactivo no agot\'o ninguno \\
+\hline
 10--15 s & 9 (penalizado~2) & 7 (sin cambio) & CPU-bound alcanza \texttt{MAX\_PENALTY\_LEVEL} \\
+\hline
 15--20 s & 9 (m\'ax.) & 7 (sin cambio) & Penalizaci\'on se mantiene en techo \\
-\midrule
-\multicolumn{4}{l}{\textit{Al detener el proceso CPU-bound:}} \\
-\midrule
+\hline
+\multicolumn{4}{|l|}{\textit{Al detener el proceso CPU-bound:}} \\
+\hline
 20--25 s & 9 $\to$ 8 (recuperaci\'on) & 7 (estable) & \texttt{quantum\_count = 0}: recupera un nivel \\
+\hline
 25--30 s & 8 $\to$ 7 (base) & 7 (estable) & Recuperaci\'on completa tras dos ventanas \\
-\bottomrule
+\hline
 \end{longtable}
 
 El proceso CPU-bound mostr\'o la degradaci\'on esperada en cada ventana de balance (un nivel por ventana hasta el techo), mientras que el proceso interactivo mantuvo su prioridad base durante toda la prueba. La recuperaci\'on gradual funcion\'o correctamente: tras dejar de agotar quantums, el proceso recuper\'o un nivel de prioridad por cada ventana en que \texttt{quantum\_count} result\'o cero. Esto confirma que la pol\'itica implementada distingue correctamente entre ambos perfiles de ejecuci\'on y respeta los l\'imites definidos por \texttt{MIN\_USER\_Q} y \texttt{MAX\_PENALTY\_LEVEL}.
