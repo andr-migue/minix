@@ -61,9 +61,9 @@ Alfonso Tejeda Rodr\'iguez \quad Grupo: C-212
 
 El presente proyecto se desarroll\'o en el marco de la asignatura Sistemas Operativos, con el objetivo de abordar de manera pr\'actica y progresiva los principios fundamentales que rigen el funcionamiento de un sistema operativo real. Los principios estudiados abarcan la gesti\'on de procesos, la planificaci\'on del procesador, el manejo de concurrencia mediante hilos y la interacci\'on con el sistema de archivos mediante llamadas al sistema. Como plataforma de trabajo se utiliz\'o MINIX~3, un sistema operativo de micron\'ucleo de uso acad\'emico dise\~nado por Andrew S. Tanenbaum, cuya arquitectura modular permite intervenir componentes internos con relativa accesibilidad sin comprometer la estabilidad de un entorno de producci\'on.
 
-La metodolog\'ia adoptada exige intervenir c\'odigo productivo real del sistema: localizar archivos fuente relevantes, comprender su funcionamiento, modificar la l\'ogica existente, recompilar e instalar los cambios dentro de la m\'aquina virtual, y validar los resultados experimentalmente. Este enfoque contrasta con ejercicios aislados o simulaciones, ya que cada modificaci\'on tiene efecto directo sobre el comportamiento observable del sistema operativo en ejecuci\'on.
+La metodolog\'ia adoptada exigi\'o intervenir c\'odigo productivo real del sistema: localizar archivos fuente relevantes, comprender su funcionamiento, modificar la l\'ogica existente, recompilar e instalar los cambios dentro de la m\'aquina virtual, y validar los resultados experimentalmente. Este enfoque contrast\'o con ejercicios aislados o simulaciones, ya que cada modificaci\'on tuvo efecto directo sobre el comportamiento observable del sistema operativo en ejecuci\'on.
 
-Los objetivos espec\'ificos del proyecto fueron cuatro: (1)~preparar el entorno de trabajo en MINIX sobre VirtualBox y realizar una primera modificaci\'on visible del sistema mediante la personalizaci\'on de \texttt{/etc/motd}; (2)~depurar un bug real en la capa de compatibilidad \texttt{pthread\_*}, que provocaba bloqueo indefinido en la segunda llamada a \texttt{pthread\_mutex\_trylock}; (3)~implementar desde cero el comando de usuario \texttt{tree}, que imprime recursivamente la estructura de directorios de forma similar al comando hom\'onimo en Linux; y (4)~extender el planificador de espacio de usuario (\texttt{sched}) para detectar procesos \emph{CPU-bound} y aplicarles una penalizaci\'on gradual de prioridad dentro de ventanas temporales de planificaci\'on.
+Los objetivos espec\'ificos del proyecto fueron cuatro: (1)~preparar el entorno de trabajo en MINIX sobre VMware y realizar una primera modificaci\'on visible del sistema mediante la personalizaci\'on de \texttt{/etc/motd}; (2)~depurar un bug real en la capa de compatibilidad \texttt{pthread\_*}, que provocaba bloqueo indefinido en la segunda llamada a \texttt{pthread\_mutex\_trylock}; (3)~implementar desde cero el comando de usuario \texttt{tree}, que imprime recursivamente la estructura de directorios de forma similar al comando hom\'onimo en Linux; y (4)~extender el planificador de espacio de usuario (\texttt{sched}) para detectar procesos \emph{CPU-bound} y aplicarles una penalizaci\'on gradual de prioridad dentro de ventanas temporales de planificaci\'on.
 
 % =========================================================
 \section{Desarrollo y resultados por componente}
@@ -102,7 +102,7 @@ No se presentaron incidencias graves durante la instalaci\'on. El \'unico ajuste
 
 \textbf{Ruta modificada:} \texttt{/etc/motd} (en el repositorio: \texttt{etc/motd}).
 
-El archivo \texttt{/etc/motd} (\emph{message of the day}) es le\'ido por el proceso de \emph{login} y su contenido se imprime en el terminal al iniciar sesi\'on. No requiere recompilaci\'on ni reinicio del sistema: basta con modificar el archivo de texto plano y los cambios son visibles en el siguiente inicio de sesi\'on.
+El archivo \texttt{/etc/motd} (\emph{message of the day}) es le\'ido por el proceso de \emph{login} y su contenido se imprime en el terminal al iniciar sesi\'on. No requiri\'o recompilaci\'on ni reinicio del sistema: bast\'o con modificar el archivo de texto plano y los cambios fueron visibles en el siguiente inicio de sesi\'on.
 
 Los permisos del archivo son \texttt{-rw-r--r--} (644), propiedad de \texttt{root}. La edici\'on se realiz\'o con el editor \texttt{vi}, disponible en la instalaci\'on base de MINIX:
 
@@ -131,7 +131,7 @@ No se encontraron restricciones de permisos adicionales: el archivo es editable 
 
 \subsubsection*{Contexto}
 
-Al ejecutar el programa de prueba provisto en la orientaci\'on --- que llama a \texttt{pthread\_mutex\_trylock} dos veces consecutivas sobre el mismo mutex --- el programa quedaba bloqueado indefinidamente tras la primera llamada. La primera invocaci\'on retornaba correctamente con valor~0, pero la segunda jam\'as retornaba: la llamada entraba en un estado del que no sal\'ia, impidiendo que \texttt{pthread\_mutex\_unlock} y \texttt{pthread\_mutex\_destroy} se ejecutaran. El proceso deb\'ia terminarse manualmente con \texttt{Ctrl+C}.
+Al ejecutar el programa de prueba provisto en la orientaci\'on --- que llama a \texttt{pthread\_mutex\_trylock} dos veces consecutivas sobre el mismo mutex --- el programa fallaba al ejecutar la segunda llamada. La primera invocaci\'on retornaba correctamente con valor~0, pero la segunda desencadenaba una recursi\'on infinita que hac\'ia crecer la pila de llamadas sin l\'imite, impidiendo que \texttt{pthread\_mutex\_unlock} y \texttt{pthread\_mutex\_destroy} se ejecutaran. El proceso deb\'ia terminarse manualmente con \texttt{Ctrl+C}.
 
 \subsubsection*{An\'alisis}
 
@@ -181,7 +181,7 @@ Con la correcci\'on aplicada, \texttt{pthread\_mutex\_trylock} delega correctame
   \item Las operaciones \texttt{pthread\_mutex\_unlock} y \texttt{pthread\_mutex\_destroy} completan con \'exito.
 \end{itemize}
 
-Para verificar la correcci\'on dentro de la VM basta recompilar la biblioteca (\texttt{cd minix/lib/libmthread \&\& make \&\& make install}), hacer reboot y ejecutar el programa de prueba de la orientaci\'on.
+Para verificar la correcci\'on dentro de la VM bast\'o recompilar la biblioteca (\texttt{cd minix/lib/libmthread \&\& make \&\& make install}), hacer reboot y ejecutar el programa de prueba de la orientaci\'on.
 
 % ---------------------------------------------------------
 \subsection{Implementaci\'on del comando \texttt{tree}}
@@ -289,7 +289,7 @@ Las prioridades en MINIX son n\'umeros enteros \emph{invertidos}: un n\'umero me
 
 \begin{itemize}[leftmargin=*]
   \item \texttt{USER\_Q = 7}: prioridad base normal de todo proceso de usuario.
-  \item \texttt{MIN\_USER\_Q = 14}: peor prioridad permitida para un proceso de usuario (el n\'umero m\'as alto del rango de usuario).
+  \item \texttt{MIN\_USER\_Q = 15}: peor prioridad permitida para un proceso de usuario (el n\'umero m\'as alto del rango de usuario).
 \end{itemize}
 
 Penalizar un proceso significa \emph{aumentar} su n\'umero de cola; recuperarlo significa \emph{disminuirlo}. Esta inversi\'on es cr\'itica para entender todos los c\'alculos de prioridad que siguen.
@@ -344,7 +344,7 @@ unsigned penalty_level; /* current penalty level (0 = no penalty) */
 #define MAX_PENALTY_LEVEL           2  /* niveles max de penalizacion */
 \end{lstlisting}
 
-Definirlas como macros con nombre expl\'icito en lugar de literales num\'ericos permite ajustar la pol\'itica con un solo cambio en el c\'odigo fuente sin afectar la l\'ogica de las funciones. Si se quisiera una ventana m\'as agresiva (por ejemplo, umbral de 2 quantums y penalizaci\'on de 3 niveles), basta con cambiar estas dos l\'ineas.
+Definirlas como macros con nombre expl\'icito en lugar de literales num\'ericos permite ajustar la pol\'itica con un solo cambio en el c\'odigo fuente sin afectar la l\'ogica de las funciones. Si se quisiera una ventana m\'as agresiva (por ejemplo, umbral de 2 quantums y penalizaci\'on de 3 niveles), bastar\'ia con cambiar estas dos l\'ineas.
 
 \paragraph{B. \texttt{do\_noquantum()}: punto de observaci\'on.}
 
