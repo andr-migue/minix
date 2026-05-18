@@ -140,7 +140,7 @@ No se encontraron restricciones de permisos adicionales: el archivo es editable 
 \subsection{Depuraci\'on de un bug en \texttt{pthread}}
 % ---------------------------------------------------------
 
-\subsubsection*{S\'intomas}
+\subsubsection*{Contexto}
 
 Al ejecutar el programa de prueba provisto en la orientaci\'on --- que llama a \texttt{pthread\_mutex\_trylock} dos veces consecutivas sobre el mismo mutex --- el programa quedaba bloqueado indefinidamente tras la primera llamada. La primera invocaci\'on retornaba correctamente con valor~0, pero la segunda jam\'as retornaba: la llamada entraba en un estado del que no sal\'ia, impidiendo que \texttt{pthread\_mutex\_unlock} y \texttt{pthread\_mutex\_destroy} se ejecutaran. El proceso deb\'ia terminarse manualmente con \texttt{Ctrl+C}.
 
@@ -304,39 +304,6 @@ int main(int argc, char *argv[])
 
 \subsubsection*{Ejemplos de ejecuci\'on}
 
-\textbf{Directorio actual (\texttt{.})} --- ejecutado desde \texttt{/root}:
-\begin{lstlisting}[style=bashstyle]
-# tree .
-/root
-|-- .profile
-|-- .ash_history
-|-- test_pthread
-|-- test_pthread.c
-|-- cpu_bound
-|-- cpu_bound.c
-\end{lstlisting}
-
-\textbf{Ruta absoluta (\texttt{/usr/bin})}:
-\begin{lstlisting}[style=bashstyle]
-# tree /usr/bin
-/usr/bin
-|-- awk
-|-- basename
-|-- bc
-|-- cc
-|-- diff
-|-- expr
-|-- find
-|-- grep
-|-- head
-|-- make
-|-- sed
-|-- sort
-|-- tail
-|-- tree
-|-- wc
-\end{lstlisting}
-
 \textbf{Ruta relativa (\texttt{../})} --- ejecutado desde \texttt{/root}:
 \begin{lstlisting}[style=bashstyle]
 # tree ../
@@ -357,13 +324,6 @@ int main(int argc, char *argv[])
 |  |-- bin
 |  |-- lib
 |  |-- share
-\end{lstlisting}
-
-\textbf{Manejo de permisos denegados}:
-\begin{lstlisting}[style=bashstyle]
-# tree /proc
-/proc
-/proc: Permission denied
 \end{lstlisting}
 
 \subsubsection*{Comparaci\'on con \texttt{tree} est\'andar}
@@ -693,8 +653,6 @@ Como mejoras posibles al trabajo realizado se proponen: (1)~extender el schedule
   \item MINIX~3 Official Website. Recuperado de \url{https://www.minix3.org}
   \item MINIX~3 Wiki --- Developer's Guide. \url{https://wiki.minix3.org/doku.php?id=developersguide:start}
   \item Documentos de orientaci\'on del proyecto: \texttt{orientation/Orientaci\'on del proyecto.pdf}, \texttt{orientation/Cronograma de hitos.pdf}, \texttt{orientation/THE MATCOM MINIX\_Informe t\'ecnico.pdf}.
-  \item C\'odigo fuente del repositorio: \texttt{etc/motd}, \texttt{bin/tree/tree.c}, \newline \texttt{minix/lib/libmthread/pthread\_compat.c}, \newline \texttt{minix/servers/sched/schedule.c}, \texttt{minix/servers/sched/schedproc.h}.
-  \item Historial Git del proyecto (commits \texttt{567869d6f}--\texttt{7c92edd4e}).
 \end{enumerate}
 
 % =========================================================
@@ -706,26 +664,11 @@ Se utiliz\'o IA generativa (Claude, Anthropic) como apoyo en las siguientes part
 \begin{itemize}[leftmargin=*]
   \item \textbf{Redacci\'on del informe t\'ecnico:} estructuraci\'on de secciones, revisi\'on de redacci\'on t\'ecnica y generaci\'on de la versi\'on \LaTeX{} del documento.
   \item \textbf{S\'intesis de requisitos:} extracci\'on y organizaci\'on de los criterios de aceptaci\'on a partir de los documentos PDF de orientaci\'on.
+  \item \textbf{Documentaci\'on de conceptos te\'oricos:} consultas sobre principios de planificaci\'on de procesos, IPC en micron\'ucleos y el modelo de capas de la biblioteca de hilos de MINIX.
+  \item \textbf{Implementaci\'on de \texttt{tree}:} b\'usqueda de las funciones est\'andar de C para manejo de directorios y archivos (\texttt{opendir}, \texttt{readdir}, \texttt{closedir}, \texttt{lstat}) y su uso correcto en el contexto de MINIX.
 \end{itemize}
 
-Las decisiones de implementaci\'on (dise\~no del algoritmo de \texttt{tree}, selecci\'on de par\'ametros del scheduler, localizaci\'on y correcci\'on del bug en \texttt{pthread}) fueron tomadas de forma independiente por el estudiante y se reflejan en el historial real del repositorio. El c\'odigo presente en el repositorio no fue generado por IA.
 
-% =========================================================
-\section{Anexos}
-% =========================================================
 
-\subsection*{A. Repositorio}
-
-El c\'odigo fuente del proyecto est\'a disponible en GitHub, forkeado desde el repositorio indicado en la orientaci\'on. El enlace se incluir\'a en el Pull Request de entrega final.
-
-\subsection*{B. L\'inea de tiempo de commits}
-
-\begin{itemize}[leftmargin=*]
-  \item \texttt{2026-04-16}: \texttt{567869d6f} --- modificaci\'on inicial de \texttt{/etc/motd} (Hito~1).
-  \item \texttt{2026-04-18}: \texttt{35634acc7} --- implementaci\'on del comando \texttt{tree} y alta en \texttt{bin/Makefile}.
-  \item \texttt{2026-04-27}: \texttt{67eeae1b7} --- correcci\'on del bug \texttt{pthread\_mutex\_trylock} (Hito~2).
-  \item \texttt{2026-05-04}: \texttt{e3e48819b} --- penalizaci\'on CPU-bound en el scheduler (Hito~3).
-  \item \texttt{2026-05-07}: \texttt{7c92edd4e} --- consolidaci\'on del informe t\'ecnico inicial.
-\end{itemize}
 
 \end{document}
