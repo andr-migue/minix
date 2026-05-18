@@ -92,7 +92,7 @@ pkgin update
 pkgin install git clang binutils
 \end{lstlisting}
 
-El repositorio del proyecto fue clonado dentro de la VM y utilizado como \'arbol fuente activo. A lo largo del proyecto se adopt\'o el flujo de trabajo est\'andar de MINIX: editar fuentes $\to$ \texttt{make} en el subdirectorio afectado $\to$ \texttt{make install} $\to$ reiniciar el servicio o rebotar seg\'un correspondiera.
+El repositorio del proyecto fue clonado dentro de la VM y utilizado como \'arbol fuente activo. A lo largo del proyecto se adopt\'o el flujo de trabajo est\'andar de MINIX: editar fuentes $\to$ \texttt{make} en el subdirectorio afectado $\to$ \texttt{make install} $\to$ reiniciar el servicio o hacer reboot seg\'un correspondiera.
 
 No se presentaron incidencias graves durante la instalaci\'on. El \'unico ajuste requerido fue ampliar el tiempo de espera del gestor de arranque (\texttt{menu.lst}) para facilitar la selecci\'on de kernel durante las sucesivas pruebas de recompilaci\'on del scheduler.
 
@@ -181,7 +181,7 @@ Con la correcci\'on aplicada, \texttt{pthread\_mutex\_trylock} delega correctame
   \item Las operaciones \texttt{pthread\_mutex\_unlock} y \texttt{pthread\_mutex\_destroy} completan con \'exito.
 \end{itemize}
 
-Para verificar la correcci\'on dentro de la VM basta recompilar la biblioteca (\texttt{cd minix/lib/libmthread \&\& make \&\& make install}), rebotar y ejecutar el programa de prueba de la orientaci\'on.
+Para verificar la correcci\'on dentro de la VM basta recompilar la biblioteca (\texttt{cd minix/lib/libmthread \&\& make \&\& make install}), hacer reboot y ejecutar el programa de prueba de la orientaci\'on.
 
 % ---------------------------------------------------------
 \subsection{Implementaci\'on del comando \texttt{tree}}
