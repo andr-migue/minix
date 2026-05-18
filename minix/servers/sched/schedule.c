@@ -393,7 +393,7 @@ void balance_queues(void)
 				}
 				/* Apply penalty: lower priority (increase queue number) */
 				new_priority = rmp->base_priority + rmp->penalty_level;
-				if (new_priority < MIN_USER_Q) {
+				if (new_priority > MIN_USER_Q) {
 					new_priority = MIN_USER_Q;
 				}
 				if (rmp->priority != new_priority) {
