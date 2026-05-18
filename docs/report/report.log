@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.5.4)  18 MAY 2026 07:56
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.5.4)  18 MAY 2026 10:01
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -402,55 +402,75 @@ File: lstlang1.sty 2025/11/14 1.11b listings language file
 ) (/usr/share/texmf-dist/tex/latex/listings/lstmisc.sty
 File: lstmisc.sty 2025/11/14 1.11b (Carsten Heinz)
 )
-Overfull \hbox (3.72203pt too wide) in paragraph at lines 148--149
-\T1/cmr/m/n/10.95 del-e-gar en \T1/cmtt/m/n/10.95 mthread_mutex_trylock\T1/cmr/m/n/10.95 . Al eje-cu-tarse, la primera lla-mada a \T1/cmtt/m/n/10.95 pthread_mutex_trylock
+Overfull \hbox (79.44748pt too wide) in paragraph at lines 152--153
+\T1/cmr/m/n/10.95 ción en lu-gar de del-e-gar en \T1/cmtt/m/n/10.95 mthread_mutex_trylock\T1/cmr/m/n/10.95 . El bloque de ini-cial-ización con \T1/cmtt/m/n/10.95 PTHREAD_MUTEX_INITIALIZER
  []
 
 
-Overfull \hbox (58.45782pt too wide) in paragraph at lines 184--185
-\T1/cmr/m/n/10.95 El co-mando \T1/cmtt/m/n/10.95 tree \T1/cmr/m/n/10.95 fue im-ple-men-tado en \T1/cmtt/m/n/10.95 bin/tree/tree.c \T1/cmr/m/n/10.95 e in-te-grado al sis-tema me-di-ante \T1/cmtt/m/n/10.95 bin/tree/Makefile
+Overfull \hbox (57.66798pt too wide) in paragraph at lines 171--172
+\T1/cmr/m/n/10.95 la del-e-gación cor-recta \T1/cmtt/m/n/10.95 mthread_mutex_trylock\T1/cmr/m/n/10.95 . El bloque de ini-cial-ización con \T1/cmtt/m/n/10.95 PTHREAD_MUTEX_INITIALIZER
+ []
+
+
+Overfull \hbox (30.38043pt too wide) in paragraph at lines 175--176
+\T1/cmr/m/n/10.95 Con la cor-rec-ción apli-cada, \T1/cmtt/m/n/10.95 pthread_mutex_trylock \T1/cmr/m/n/10.95 del-ega cor-rec-ta-mente en \T1/cmtt/m/n/10.95 mthread_mutex_trylock\T1/cmr/m/n/10.95 .
  []
 
 [4]
+Overfull \hbox (39.95781pt too wide) in paragraph at lines 183--184
+[]\T1/cmr/m/n/10.95 Para ver-i-ficar la cor-rec-ción den-tro de la VM basta re-com-pi-lar la bib-lioteca (\T1/cmtt/m/n/10.95 cd minix/lib/libmthread
+ []
+
+
+Overfull \hbox (58.45782pt too wide) in paragraph at lines 189--190
+\T1/cmr/m/n/10.95 El co-mando \T1/cmtt/m/n/10.95 tree \T1/cmr/m/n/10.95 fue im-ple-men-tado en \T1/cmtt/m/n/10.95 bin/tree/tree.c \T1/cmr/m/n/10.95 e in-te-grado al sis-tema me-di-ante \T1/cmtt/m/n/10.95 bin/tree/Makefile
+ []
+
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 193.
- [5] [6] [7] [8] [9]
-Overfull \hbox (20.37112pt too wide) in paragraph at lines 391--392
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 198.
+[5] [6] [7] [8] [9]
+Overfull \hbox (20.37112pt too wide) in paragraph at lines 396--397
 []\T1/cmr/m/n/10.95 Para pro-ce-sos de sis-tema, \T1/cmtt/m/n/10.95 base_priority \T1/cmr/m/n/10.95 debe re-fle-jar su pri-or-i-dad real asig-nada (\T1/cmtt/m/n/10.95 max_priority\T1/cmr/m/n/10.95 ),
  []
 
 
-Overfull \hbox (12.46962pt too wide) in paragraph at lines 409--410
+Overfull \hbox (12.46962pt too wide) in paragraph at lines 414--415
 \T1/cmr/m/n/10.95 cuen-tra en \T1/cmtt/m/n/10.95 minix/servers/sched/schedule.c \T1/cmr/m/n/10.95 del repos-i-to-rio: [][]$\T1/cmtt/m/n/10.95 https : / / github . com / andr-[]migue /
  []
 
 
-Overfull \hbox (10.96286pt too wide) in paragraph at lines 415--415
+Overfull \hbox (10.96286pt too wide) in paragraph at lines 420--420
  []|\T1/cmtt/m/n/10.95 penalty_level| 
  []
 
 
-Overfull \hbox (10.96286pt too wide) in paragraph at lines 419--419
+Overfull \hbox (10.96286pt too wide) in paragraph at lines 424--424
  []|\T1/cmtt/m/n/10.95 penalty_level| 
  []
 
-[10]
-Overfull \hbox (8.0605pt too wide) in paragraph at lines 450--451
+
+ignored: Infinite glue shrinkage found in box being split [10]
+Overfull \hbox (8.0605pt too wide) in paragraph at lines 455--456
 []\T1/cmr/m/n/10.95 El pro-ceso se crea y \T1/cmtt/m/n/10.95 do_start_scheduling() \T1/cmr/m/n/10.95 ini-cial-iza: \T1/cmtt/m/n/10.95 priority = base_priority = USER_Q
  []
 
-[11] [12]
-Overfull \hbox (13.71779pt too wide) in paragraph at lines 526--527
-\T1/cmr/m/n/10.95 fueron aña-di-dos, la lóg-ica de pe-nal-ización y re-cu-peración fue im-ple-men-tada en \T1/cmtt/m/n/10.95 balance_queues()\T1/cmr/m/n/10.95 ,
+[11]
+Overfull \hbox (19.81636pt too wide) in paragraph at lines 495--496
+[]\T1/cmr/m/n/10.95 Este com-por-tamiento se de-sprende di-rec-ta-mente de la lóg-ica im-ple-men-tada en \T1/cmtt/m/n/10.95 balance_queues()\T1/cmr/m/n/10.95 :
  []
 
-[13]
-Overfull \hbox (29.13313pt too wide) in paragraph at lines 552--553
+
+Overfull \hbox (13.24672pt too wide) in paragraph at lines 495--496
+\T1/cmr/m/n/10.95 cada ven-tana de \T1/cmtt/m/n/10.95 BALANCE_TIMEOUT \T1/cmr/m/n/10.95 se-gun-dos, si \T1/cmtt/m/n/10.95 quantum_count $\OMS/cmsy/m/n/10.95 ^^U$ \T1/cmtt/m/n/10.95 CPU_BOUND_QUANTUM_THRESHOLD
+ []
+
+[12]
+Overfull \hbox (29.13313pt too wide) in paragraph at lines 533--534
 []\T1/cmr/m/n/10.95 MINIX 3 Wiki --- De-vel-oper's Guide. [][]$\T1/cmtt/m/n/10.95 https : / / wiki . minix3 . org / doku . php ? id = developersguide :
  []
 
-
-Overfull \hbox (37.06131pt too wide) in paragraph at lines 553--554
+[13]
+Overfull \hbox (37.06131pt too wide) in paragraph at lines 534--535
 \T1/cmtt/m/n/10.95 orientation/Cronograma de hitos.pdf\T1/cmr/m/n/10.95 , \T1/cmtt/m/n/10.95 orientation/THE MATCOM MINIX_Informe técnico.pdf\T1/cmr/m/n/10.95 . 
  []
 
@@ -463,18 +483,18 @@ Package rerunfilecheck Info: File `report.out' has not changed.
 (rerunfilecheck)             Checksum: A281E0ED1FC7C43863990D5E0D7FCC3A;2322.
  ) 
 Here is how much of TeX's memory you used:
- 12970 strings out of 469515
- 195976 string characters out of 5470808
- 920733 words of memory out of 5000000
- 41310 multiletter control sequences out of 15000+600000
+ 12921 strings out of 469515
+ 195461 string characters out of 5470808
+ 936733 words of memory out of 5000000
+ 41276 multiletter control sequences out of 15000+600000
  641355 words of font info for 68 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  75i,6n,79p,981b,2062s stack positions out of 10000i,1000n,20000p,200000b,200000s
  </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm0800.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecit1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm0600.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1200.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1000.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecbx1200.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecti1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecbx1095.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecbx1440.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm1200.600pk> </home/miguel/.texlive/texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm1728.600pk></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on report.pdf (14 pages, 221574 bytes).
+Output written on report.pdf (14 pages, 219301 bytes).
 PDF statistics:
- 894 PDF objects out of 1000 (max. 8388607)
- 378 compressed objects within 4 object streams
- 187 named destinations out of 1000 (max. 500000)
+ 872 PDF objects out of 1000 (max. 8388607)
+ 359 compressed objects within 4 object streams
+ 172 named destinations out of 1000 (max. 500000)
  89 words of extra memory for PDF output out of 10000 (max. 10000000)
 

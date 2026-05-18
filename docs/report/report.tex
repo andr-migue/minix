@@ -141,11 +141,15 @@ Al inspeccionar el archivo \texttt{pthread\_compat.c} se localiz\'o la funci\'on
 \begin{lstlisting}[style=cstyle,caption={C\'odigo err\'oneo original --- llamada recursiva a s\'i misma}]
 int pthread_mutex_trylock(pthread_mutex_t *mutex)
 {
+    if (PTHREAD_MUTEX_INITIALIZER == *mutex) {
+        mthread_mutex_init(mutex, NULL);
+    }
+
     return pthread_mutex_trylock(mutex); /* BUG: recursion infinita */
 }
 \end{lstlisting}
 
-La causa ra\'iz es una \textbf{llamada recursiva directa}: la funci\'on se invoca a s\'i misma en lugar de delegar en \texttt{mthread\_mutex\_trylock}. Al ejecutarse, la primera llamada a \texttt{pthread\_mutex\_trylock} llama recursivamente a s\'i misma de forma indefinida, sin llegar nunca a ejecutar la implementaci\'on real de \texttt{mthread}. El s\'intoma observable (cuelgue) se produce porque la pila de llamadas crece sin l\'imite hasta que el proceso queda en un estado irrecuperable. El patr\'on sigue el mismo dise\~no que todas las dem\'as funciones del archivo, donde cada \texttt{pthread\_X} debe delegar en \texttt{mthread\_X}; \'esta era la \'unica que ten\'ia el error de referenciar su propio nombre.
+La causa ra\'iz es una \textbf{llamada recursiva directa}: la l\'inea de retorno invoca a la propia funci\'on en lugar de delegar en \texttt{mthread\_mutex\_trylock}. El bloque de inicializaci\'on con \texttt{PTHREAD\_MUTEX\_INITIALIZER} es correcto y sigue el patr\'on de las dem\'as funciones del archivo; el error est\'a exclusivamente en la \'ultima l\'inea. Al ejecutarse, la llamada a \texttt{pthread\_mutex\_trylock} entra en recursi\'on infinita sin llegar jam\'as a \texttt{mthread}: la pila crece sin l\'imite hasta que el proceso queda en un estado irrecuperable (cuelgue observable). El patr\'on del archivo establece que cada \texttt{pthread\_X} debe delegar en \texttt{mthread\_X}; \'esta era la \'unica funci\'on que referencraba su propio nombre en la l\'inea de retorno.
 
 \subsubsection*{Correcci\'on}
 
@@ -156,26 +160,27 @@ La correcci\'on m\'inima consiste en reemplazar la llamada recursiva por la dele
 +++ b/minix/lib/libmthread/pthread_compat.c
 @@ int pthread_mutex_trylock(pthread_mutex_t *mutex)
  {
+     if (PTHREAD_MUTEX_INITIALIZER == *mutex) {
+         mthread_mutex_init(mutex, NULL);
+     }
 -    return pthread_mutex_trylock(mutex);
 +    return mthread_mutex_trylock(mutex);
  }
 \end{lstlisting}
 
-Se eligi\'o esta soluci\'on m\'inima porque preserva exactamente la interfaz esperada y respeta el patr\'on uniforme que siguen todas las dem\'as funciones de compatibilidad en el mismo archivo. No fue necesario modificar la l\'ogica interna de \texttt{mthread\_mutex\_trylock}, que ya maneja correctamente el caso de un mutex ya tomado por el mismo hilo, retornando \texttt{EDEADLK}.
+El cambio es de una sola l\'inea: reemplazar la llamada recursiva \texttt{pthread\_mutex\_trylock} por la delegaci\'on correcta \texttt{mthread\_mutex\_trylock}. El bloque de inicializaci\'on con \texttt{PTHREAD\_MUTEX\_INITIALIZER} ya exist\'ia en el c\'odigo original y se conserva intacto. La correcci\'on preserva exactamente la interfaz esperada y respeta el patr\'on uniforme que siguen todas las dem\'as funciones de compatibilidad en el mismo archivo.
 
-\subsubsection*{Verificaci\'on}
+\subsubsection*{Comportamiento esperado tras la correcci\'on}
 
-Tras recompilar \texttt{libmthread} (\texttt{cd minix/lib/libmthread \&\& make \&\& make install}) y rebotar el sistema, se ejecut\'o el programa de prueba y se obtuvo la siguiente salida:
+Con la correcci\'on aplicada, \texttt{pthread\_mutex\_trylock} delega correctamente en \texttt{mthread\_mutex\_trylock}. El comportamiento esperado del programa de prueba provisto en la orientaci\'on es:
 
-\begin{lstlisting}[style=bashstyle,caption={Salida del programa de prueba tras la correcci\'on}]
-first trylock:  0 (OK)
-second trylock: 35 (Resource deadlock avoided)
-unlock:         0 (OK)
-destroy:        0 (OK)
-PASS
-\end{lstlisting}
+\begin{itemize}[leftmargin=*]
+  \item La primera llamada a \texttt{pthread\_mutex\_trylock} retorna~0 (\texttt{OK}) porque el mutex estaba libre.
+  \item La segunda llamada retorna~35 (\texttt{EDEADLK}), ya que \texttt{mthread\_mutex\_trylock} detecta que el mutex ya est\'a tomado por el mismo hilo y devuelve el error correspondiente en lugar de bloquearse.
+  \item Las operaciones \texttt{pthread\_mutex\_unlock} y \texttt{pthread\_mutex\_destroy} completan con \'exito.
+\end{itemize}
 
-La primera llamada retorna~0 (\texttt{OK}) porque el mutex estaba libre. La segunda retorna~35 (\texttt{EDEADLK}) porque el mutex ya est\'a tomado por el mismo hilo, comportamiento correcto para un mutex no recursivo. Las operaciones de \texttt{unlock} y \texttt{destroy} completan con \'exito, y el programa finaliza reportando \texttt{PASS}, cumpliendo el criterio de aceptaci\'on establecido en la orientaci\'on del proyecto.
+Para verificar la correcci\'on dentro de la VM basta recompilar la biblioteca (\texttt{cd minix/lib/libmthread \&\& make \&\& make install}), rebotar y ejecutar el programa de prueba de la orientaci\'on.
 
 % ---------------------------------------------------------
 \subsection{Implementaci\'on del comando \texttt{tree}}
@@ -456,62 +461,38 @@ El ciclo de vida de la penalizaci\'on para un proceso CPU-bound es el siguiente:
   \item Una ventana m\'as sin agotar quantums: \texttt{penalty\_level} baja a 0, \texttt{priority} vuelve a 7. Recuperaci\'on completa.
 \end{enumerate}
 
-\subsubsection*{Validaci\'on experimental}
+\subsubsection*{Comportamiento esperado del mecanismo}
 
-Se dise\~naron dos escenarios de prueba para verificar el comportamiento diferenciado del scheduler.
-
-\textbf{Escenario A --- Proceso CPU-bound}: bucle aritm\'etico infinito sin operaciones bloqueantes:
-\begin{lstlisting}[style=cstyle,caption={Proceso CPU-bound de prueba (\texttt{cpu\_bound.c})}]
-int main(void) {
-    volatile long x = 0;
-    while (1) x++;  /* nunca cede la CPU voluntariamente */
-    return 0;
-}
-\end{lstlisting}
-
-\textbf{Escenario B --- Proceso interactivo}: proceso que duerme 1~segundo entre iteraciones, cediendo la CPU en cada ciclo:
-\begin{lstlisting}[style=cstyle,caption={Proceso interactivo de prueba (\texttt{interactive.c})}]
-#include <unistd.h>
-#include <stdio.h>
-int main(void) {
-    while (1) {
-        sleep(1);         /* cede CPU, no agota quantum */
-        printf("tick\n");
-    }
-    return 0;
-}
-\end{lstlisting}
-
-Ambos programas se ejecutaron simult\'aneamente y se observ\'o la evoluci\'on de prioridad mediante \texttt{top}. La tabla siguiente resume el comportamiento esperado y observado (prioridades en escala MINIX: menor = mejor):
+El comportamiento del mecanismo puede analizarse est\'aticamente a partir del c\'odigo. Para validarlo dentro de la VM basta ejecutar dos programas en paralelo: un bucle aritm\'etico infinito (proceso CPU-bound que agota quantums continuamente) y un proceso que duerme entre iteraciones (proceso interactivo que cede la CPU). Observando las prioridades con \texttt{top} a lo largo de ventanas de 5~segundos, se esperar\'ia el siguiente patr\'on (prioridades en escala MINIX: n\'umero menor = mejor prioridad):
 
 \begin{longtable}{|>{\centering\arraybackslash}p{2.2cm}|>{\centering\arraybackslash}p{3.5cm}|>{\centering\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{4.5cm}|}
 \hline
-\textbf{Ventana} & \textbf{CPU-bound (priority)} & \textbf{Interactivo (priority)} & \textbf{Observaci\'on} \\
+\textbf{Ventana} & \textbf{CPU-bound (priority)} & \textbf{Interactivo (priority)} & \textbf{Raz\'on} \\
 \hline
 \endfirsthead
 \hline
-\textbf{Ventana} & \textbf{CPU-bound (priority)} & \textbf{Interactivo (priority)} & \textbf{Observaci\'on} \\
+\textbf{Ventana} & \textbf{CPU-bound (priority)} & \textbf{Interactivo (priority)} & \textbf{Raz\'on} \\
 \hline
 \endhead
 \hline
 \endfoot
 0--5 s   & 7 (base) & 7 (base) & Ambos arrancan con \texttt{USER\_Q} \\
 \hline
-5--10 s  & 8 (penalizado~1) & 7 (sin cambio) & CPU-bound agot\'o $\geq$3 quantums; interactivo no agot\'o ninguno \\
+5--10 s  & 8 (penalizado~1) & 7 (sin cambio) & CPU-bound acumula $\geq$3 quantums; interactivo no agota ninguno \\
 \hline
 10--15 s & 9 (penalizado~2) & 7 (sin cambio) & CPU-bound alcanza \texttt{MAX\_PENALTY\_LEVEL} \\
 \hline
-15--20 s & 9 (m\'ax.) & 7 (sin cambio) & Penalizaci\'on se mantiene en techo \\
+$\geq$15 s & 9 (techo) & 7 (sin cambio) & Penalizaci\'on se mantiene mientras siga siendo CPU-bound \\
 \hline
-\multicolumn{4}{|l|}{\textit{Al detener el proceso CPU-bound:}} \\
+\multicolumn{4}{|l|}{\textit{Si el proceso CPU-bound cesa de consumir quantums:}} \\
 \hline
-20--25 s & 9 $\to$ 8 (recuperaci\'on) & 7 (estable) & \texttt{quantum\_count = 0}: recupera un nivel \\
++5 s & 9 $\to$ 8 & 7 (estable) & \texttt{quantum\_count = 0}: recupera un nivel por ventana \\
 \hline
-25--30 s & 8 $\to$ 7 (base) & 7 (estable) & Recuperaci\'on completa tras dos ventanas \\
++10 s & 8 $\to$ 7 (base) & 7 (estable) & Recuperaci\'on completa tras dos ventanas sin penalty \\
 \hline
 \end{longtable}
 
-El proceso CPU-bound mostr\'o la degradaci\'on esperada en cada ventana de balance (un nivel por ventana hasta el techo), mientras que el proceso interactivo mantuvo su prioridad base durante toda la prueba. La recuperaci\'on gradual funcion\'o correctamente: tras dejar de agotar quantums, el proceso recuper\'o un nivel de prioridad por cada ventana en que \texttt{quantum\_count} result\'o cero. Esto confirma que la pol\'itica implementada distingue correctamente entre ambos perfiles de ejecuci\'on y respeta los l\'imites definidos por \texttt{MIN\_USER\_Q} y \texttt{MAX\_PENALTY\_LEVEL}.
+Este comportamiento se desprende directamente de la l\'ogica implementada en \texttt{balance\_queues()}: cada ventana de \texttt{BALANCE\_TIMEOUT}~segundos, si \texttt{quantum\_count $\geq$ CPU\_BOUND\_QUANTUM\_THRESHOLD} se incrementa \texttt{penalty\_level} (hasta \texttt{MAX\_PENALTY\_LEVEL}), y si \texttt{quantum\_count == 0} con penalizaci\'on activa se decrementa. La tabla anterior refleja esa l\'ogica aplicada a los par\'ametros definidos en el c\'odigo: \texttt{USER\_Q = 7}, \texttt{CPU\_BOUND\_QUANTUM\_THRESHOLD = 3} y \texttt{MAX\_PENALTY\_LEVEL = 2}.
 
 % =========================================================
 \section{Resultados globales y discusi\'on}
@@ -521,9 +502,9 @@ Los cuatro componentes del proyecto fueron implementados y funcionan correctamen
 
 \begin{itemize}[leftmargin=*]
   \item \textbf{Personalizaci\'on de \texttt{/etc/motd}:} \emph{completa}. El mensaje personalizado se muestra correctamente al iniciar sesi\'on, con referencia expl\'icita a la Facultad de Matem\'atica y Computaci\'on de la UH.
-  \item \textbf{Correcci\'on de \texttt{pthread\_mutex\_trylock}:} \emph{completa}. El programa de prueba produce la salida esperada y finaliza con \texttt{PASS}. La causa ra\'iz (recursi\'on directa en lugar de delegaci\'on) qued\'o eliminada con una modificaci\'on de una sola l\'inea.
+  \item \textbf{Correcci\'on de \texttt{pthread\_mutex\_trylock}:} \emph{completa}. La causa ra\'iz (recursi\'on directa en lugar de delegaci\'on a \texttt{mthread\_mutex\_trylock}) qued\'o eliminada con una modificaci\'on de una sola l\'inea. El comportamiento resultante es correcto seg\'un la sem\'antica de la funci\'on: la segunda llamada debe retornar \texttt{EDEADLK} en lugar de bloquearse indefinidamente.
   \item \textbf{Comando \texttt{tree}:} \emph{completo}. La herramienta muestra la estructura de directorios recursivamente, respeta la indentaci\'on por nivel, no sigue enlaces simb\'olicos y maneja correctamente errores de permiso.
-  \item \textbf{Penalizaci\'on CPU-bound en el scheduler:} \emph{completa}. Los campos de estado por proceso fueron a\~nadidos, la l\'ogica de penalizaci\'on y recuperaci\'on fue implementada en \texttt{balance\_queues()}, y la validaci\'on experimental confirma el comportamiento esperado.
+  \item \textbf{Penalizaci\'on CPU-bound en el scheduler:} \emph{completa}. Los campos de estado por proceso (\texttt{base\_priority}, \texttt{quantum\_count}, \texttt{penalty\_level}) fueron a\~nadidos a \texttt{schedproc.h} y la l\'ogica de penalizaci\'on y recuperaci\'on gradual fue implementada en \texttt{do\_noquantum()} y \texttt{balance\_queues()}. El comportamiento esperado se desprende directamente del c\'odigo y de los par\'ametros definidos (\texttt{CPU\_BOUND\_QUANTUM\_THRESHOLD = 3}, \texttt{MAX\_PENALTY\_LEVEL = 2}).
 \end{itemize}
 
 La principal dificultad t\'ecnica encontrada fue comprender el flujo de mensajes entre el kernel y el servidor \texttt{sched}: el kernel no llama directamente a funciones del scheduler, sino que env\'ia un mensaje de tipo \texttt{SCHEDULING\_NO\_QUANTUM} cuando un proceso agota su quantum. Solo al entender este mecanismo fue posible identificar \texttt{do\_noquantum()} como el punto correcto para incrementar el contador. Una confusi\'on inicial llev\'o a considerar modificar directamente \texttt{minix/kernel/proc.c}, lo que habr\'ia sido incorrecto dado que el objetivo era modificar el planificador de espacio de usuario.

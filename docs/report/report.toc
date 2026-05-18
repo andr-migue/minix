@@ -5,9 +5,9 @@
 \contentsline {subsection}{\numberline {2.2}Personalizaci\'on del mensaje de bienvenida}{3}{subsection.2.2}%
 \contentsline {subsection}{\numberline {2.3}Depuraci\'on de un bug en \texttt {pthread}}{3}{subsection.2.3}%
 \contentsline {subsection}{\numberline {2.4}Implementaci\'on del comando \texttt {tree}}{5}{subsection.2.4}%
-\contentsline {subsection}{\numberline {2.5}Penalizaci\'on por uso intensivo de CPU}{6}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.5}Penalizaci\'on por uso intensivo de CPU}{7}{subsection.2.5}%
 \contentsline {paragraph}{Convenci\'on de prioridades.}{7}{section*.14}%
-\contentsline {paragraph}{Elecci\'on de la ventana temporal.}{7}{section*.17}%
+\contentsline {paragraph}{Elecci\'on de la ventana temporal.}{8}{section*.17}%
 \contentsline {paragraph}{Umbral de clasificaci\'on CPU-bound.}{8}{section*.18}%
 \contentsline {paragraph}{M\'aximo de penalizaci\'on.}{8}{section*.19}%
 \contentsline {paragraph}{Recuperaci\'on gradual.}{8}{section*.20}%
@@ -18,5 +18,5 @@
 \contentsline {paragraph}{D. \texttt {balance\_queues()}: el coraz\'on de la pol\'itica.}{10}{section*.27}%
 \contentsline {section}{\numberline {3}Resultados globales y discusi\'on}{12}{section.3}%
 \contentsline {section}{\numberline {4}Conclusiones}{13}{section.4}%
-\contentsline {section}{\numberline {5}Referencias consultadas}{14}{section.5}%
+\contentsline {section}{\numberline {5}Referencias consultadas}{13}{section.5}%
 \contentsline {section}{\numberline {6}Declaraci\'on de uso de IA}{14}{section.6}%
