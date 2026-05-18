@@ -17,6 +17,6 @@
 \contentsline {paragraph}{C. \texttt {do\_start\_scheduling()}: inicializaci\'on en tres puntos.}{9}{section*.26}%
 \contentsline {paragraph}{D. \texttt {balance\_queues()}: el coraz\'on de la pol\'itica.}{10}{section*.27}%
 \contentsline {section}{\numberline {3}Resultados globales y discusi\'on}{14}{section.3}%
-\contentsline {section}{\numberline {4}Conclusiones}{15}{section.4}%
+\contentsline {section}{\numberline {4}Conclusiones}{14}{section.4}%
 \contentsline {section}{\numberline {5}Referencias consultadas}{15}{section.5}%
 \contentsline {section}{\numberline {6}Declaraci\'on de uso de IA}{15}{section.6}%
