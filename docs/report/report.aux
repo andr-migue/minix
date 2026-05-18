@@ -30,31 +30,20 @@
 \@writefile{toc}{\contentsline {paragraph}{B. \texttt  {do\_noquantum()}: punto de observaci\'on.}{9}{section*.25}\protected@file@percent }
 \@writefile{lol}{\contentsline {lstlisting}{\numberline {9}Incremento del contador en \texttt  {do\_noquantum()}}{9}{lstlisting.9}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{C. \texttt  {do\_start\_scheduling()}: inicializaci\'on en tres puntos.}{9}{section*.26}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {10}Inicializaci\'on temprana en \texttt  {do\_start\_scheduling()}}{9}{lstlisting.10}\protected@file@percent }
-\gdef \LT@i {\LT@entry 
-    {1}{83.93187pt}\LT@entry 
-    {1}{92.0678pt}\LT@entry 
-    {1}{74.99596pt}\LT@entry 
-    {1}{168.89014pt}}
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {11}Inicializaci\'on en rama \texttt  {SCHEDULING\_START}}{10}{lstlisting.11}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {12}Inicializaci\'on en rama \texttt  {SCHEDULING\_INHERIT}}{10}{lstlisting.12}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {10}Inicializaci\'on en rama \texttt  {SCHEDULING\_START}}{10}{lstlisting.10}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {11}Inicializaci\'on en rama \texttt  {SCHEDULING\_INHERIT}}{10}{lstlisting.11}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{D. \texttt  {balance\_queues()}: el coraz\'on de la pol\'itica.}{10}{section*.27}\protected@file@percent }
-\gdef \LT@ii {\LT@entry 
-    {1}{75.39595pt}\LT@entry 
-    {1}{111.98463pt}\LT@entry 
-    {1}{111.98463pt}\LT@entry 
-    {1}{140.4374pt}}
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {13}Compilaci\'on y ejecuci\'on de los programas de prueba}{13}{lstlisting.13}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Estado inicial del sistema antes de lanzar los procesos de prueba. Todos los procesos de usuario se encuentran en prioridad base (\texttt  {NICE=7}). La CPU se muestra mayoritariamente ociosa.}}{13}{figure.1}\protected@file@percent }
-\newlabel{fig:baseline}{{1}{13}{Estado inicial del sistema antes de lanzar los procesos de prueba. Todos los procesos de usuario se encuentran en prioridad base (\texttt {NICE=7}). La CPU se muestra mayoritariamente ociosa}{figure.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Sistema con los procesos de prueba en ejecuci\'on. El proceso \texttt  {cpu\_bound} comienza a consumir tiempo de CPU de forma sostenida.}}{14}{figure.2}\protected@file@percent }
-\newlabel{fig:running}{{2}{14}{Sistema con los procesos de prueba en ejecuci\'on. El proceso \texttt {cpu\_bound} comienza a consumir tiempo de CPU de forma sostenida}{figure.2}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Primera penalizaci\'on aplicada: el proceso \texttt  {cpu\_bound} (PID~644) aparece con \texttt  {NICE=8}, un nivel por encima de la prioridad base. El proceso \texttt  {interactive} mantiene su prioridad original.}}{14}{figure.3}\protected@file@percent }
-\newlabel{fig:penalty1}{{3}{14}{Primera penalizaci\'on aplicada: el proceso \texttt {cpu\_bound} (PID~644) aparece con \texttt {NICE=8}, un nivel por encima de la prioridad base. El proceso \texttt {interactive} mantiene su prioridad original}{figure.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Penalizaci\'on m\'axima alcanzada: el proceso \texttt  {cpu\_bound} (PID~644) sube a \texttt  {NICE=15} (\texttt  {MIN\_USER\_Q}, techo del rango de usuario), consumiendo el 44.73\% de MCPU con la peor prioridad posible. La carga de usuario sube al 100\%. El proceso \texttt  {interactive} no aparece penalizado.}}{15}{figure.4}\protected@file@percent }
-\newlabel{fig:penalty2}{{4}{15}{Penalizaci\'on m\'axima alcanzada: el proceso \texttt {cpu\_bound} (PID~644) sube a \texttt {NICE=15} (\texttt {MIN\_USER\_Q}, techo del rango de usuario), consumiendo el 44.73\% de MCPU con la peor prioridad posible. La carga de usuario sube al 100\%. El proceso \texttt {interactive} no aparece penalizado}{figure.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3}Resultados globales y discusi\'on}{16}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}Conclusiones}{17}{section.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5}Referencias consultadas}{17}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Declaraci\'on de uso de IA}{17}{section.6}\protected@file@percent }
-\gdef \@abspage@last{17}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {12}Compilaci\'on y ejecuci\'on de los programas de prueba}{11}{lstlisting.12}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Estado del sistema con el scheduler original del repositorio, antes de aplicar ninguna modificaci\'on. La CPU se encuentra al 98.4\% idle, todos los procesos operan en prioridad base (\texttt  {PRI=7}) y ning\'un proceso consume tiempo de CPU apreciable.}}{12}{figure.1}\protected@file@percent }
+\newlabel{fig:baseline}{{1}{12}{Estado del sistema con el scheduler original del repositorio, antes de aplicar ninguna modificaci\'on. La CPU se encuentra al 98.4\% idle, todos los procesos operan en prioridad base (\texttt {PRI=7}) y ning\'un proceso consume tiempo de CPU apreciable}{figure.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Sistema con el scheduler modificado pero sin los programas de prueba en ejecuci\'on. La CPU se encuentra al 100\% idle y todos los procesos permanecen en prioridad base (\texttt  {PRI=7}), confirmando que el mecanismo no introduce ninguna perturbaci\'on en ausencia de procesos CPU-bound.}}{12}{figure.2}\protected@file@percent }
+\newlabel{fig:running}{{2}{12}{Sistema con el scheduler modificado pero sin los programas de prueba en ejecuci\'on. La CPU se encuentra al 100\% idle y todos los procesos permanecen en prioridad base (\texttt {PRI=7}), confirmando que el mecanismo no introduce ninguna perturbaci\'on en ausencia de procesos CPU-bound}{figure.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Inicio de los tests de validaci\'on y primera penalizaci\'on aplicada tras la primera ventana de \texttt  {BALANCE\_TIMEOUT}: \texttt  {cpu\_bound} (PID~644) sube a \texttt  {PRI=8} al haber agotado quantums de forma sostenida. El proceso \texttt  {interactive} permanece en prioridad base (\texttt  {PRI=7}) sin penalizaci\'on.}}{13}{figure.3}\protected@file@percent }
+\newlabel{fig:penalty1}{{3}{13}{Inicio de los tests de validaci\'on y primera penalizaci\'on aplicada tras la primera ventana de \texttt {BALANCE\_TIMEOUT}: \texttt {cpu\_bound} (PID~644) sube a \texttt {PRI=8} al haber agotado quantums de forma sostenida. El proceso \texttt {interactive} permanece en prioridad base (\texttt {PRI=7}) sin penalizaci\'on}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Penalizaci\'on m\'axima alcanzada 5~segundos despu\'es: \texttt  {cpu\_bound} (PID~644) escala a \texttt  {PRI=15} (\texttt  {MIN\_USER\_Q}, techo del rango de usuario), acaparando el 44.73\% de CPU (\texttt  {WCPU=89.44\%}) con la peor prioridad posible. La carga de usuario sube al 100\%. El proceso \texttt  {interactive} sigue sin penalizaci\'on (\texttt  {PRI=7}), confirmando que el mecanismo discrimina correctamente entre ambos tipos de proceso.}}{13}{figure.4}\protected@file@percent }
+\newlabel{fig:penalty2}{{4}{13}{Penalizaci\'on m\'axima alcanzada 5~segundos despu\'es: \texttt {cpu\_bound} (PID~644) escala a \texttt {PRI=15} (\texttt {MIN\_USER\_Q}, techo del rango de usuario), acaparando el 44.73\% de CPU (\texttt {WCPU=89.44\%}) con la peor prioridad posible. La carga de usuario sube al 100\%. El proceso \texttt {interactive} sigue sin penalizaci\'on (\texttt {PRI=7}), confirmando que el mecanismo discrimina correctamente entre ambos tipos de proceso}{figure.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Resultados globales y discusi\'on}{14}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Conclusiones}{15}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Referencias consultadas}{15}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Declaraci\'on de uso de IA}{15}{section.6}\protected@file@percent }
+\gdef \@abspage@last{15}

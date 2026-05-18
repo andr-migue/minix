@@ -373,12 +373,6 @@ Esta funci\'on se llama cuando el scheduler toma control de un proceso nuevo. Ha
 
 \textit{Bloque de inicializaci\'on temprana} (antes del \texttt{switch}):
 
-\begin{lstlisting}[style=cstyle,caption={Inicializaci\'on temprana en \texttt{do\_start\_scheduling()}}]
-/* Initialize penalty mechanism fields */
-rmp->base_priority = USER_Q;
-rmp->quantum_count = 0;
-rmp->penalty_level = 0;
-\end{lstlisting}
 
 Los slots de \texttt{schedproc[]} son reutilizados cuando un proceso termina y uno nuevo ocupa su posici\'on. Sin inicializaci\'on expl\'icita, los nuevos campos contendr\'ian basura del proceso anterior, haciendo que el proceso nuevo herede penalizaci\'on o conteos que no le corresponden. Este bloque garantiza un estado limpio independientemente del contenido previo del slot.
 
@@ -414,30 +408,6 @@ El hijo hereda la prioridad \emph{actual} del padre como punto de partida. Se us
 
 Esta es la funci\'on m\'as significativamente modificada. Se ejecuta cada 5 segundos y aplica la pol\'itica completa. La implementaci\'on se encuentra en \texttt{minix/servers/sched/schedule.c} del repositorio: \url{https://github.com/andr-migue/minix}.
 
-La tabla siguiente resume las decisiones tomadas en cada caso:
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.5cm}|>{\centering\arraybackslash}p{2.8cm}|>{\centering\arraybackslash}p{2.2cm}|>{\raggedright\arraybackslash}p{5.5cm}|}
-\hline
-\textbf{Tipo} & \textbf{\texttt{quantum\_count}} & \textbf{\texttt{penalty\_level}} & \textbf{Acci\'on} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Tipo} & \textbf{\texttt{quantum\_count}} & \textbf{\texttt{penalty\_level}} & \textbf{Acci\'on} \\
-\hline
-\endhead
-\hline
-\endfoot
-Usuario & $\geq 3$ & cualquiera & \texttt{penalty\_level++} (m\'ax. 2); \texttt{priority = base + penalty}; clamp a \texttt{MIN\_USER\_Q} \\
-\hline
-Usuario & $= 0$ & $> 0$ & \texttt{penalty\_level--}; \texttt{priority = base + penalty}; clamp a \texttt{max\_priority} \\
-\hline
-Usuario & 1 o 2 & cualquiera & Sin cambio (zona neutral) \\
-\hline
-Usuario & cualquiera & $= 0$ & Sin cambio (ya en prioridad base) \\
-\hline
-Sistema & --- & --- & Comportamiento original: sube 1 nivel si fue degradado \\
-\hline
-\end{longtable}
 
 \textbf{Decisiones de implementaci\'on relevantes}:
 
@@ -462,39 +432,6 @@ El ciclo de vida de la penalizaci\'on para un proceso CPU-bound es el siguiente:
   \item Una ventana m\'as sin agotar quantums: \texttt{penalty\_level} baja a 0, \texttt{priority} vuelve a 7. Recuperaci\'on completa.
 \end{enumerate}
 
-\subsubsection*{Comportamiento esperado del mecanismo}
-
-El comportamiento del mecanismo puede analizarse est\'aticamente a partir del c\'odigo. Para validarlo dentro de la VM basta ejecutar dos programas en paralelo: un bucle aritm\'etico infinito (proceso CPU-bound que agota quantums continuamente) y un proceso que duerme entre iteraciones (proceso interactivo que cede la CPU). Observando las prioridades con \texttt{top} a lo largo de ventanas de 5~segundos, se esperar\'ia el siguiente patr\'on (prioridades en escala MINIX: n\'umero menor = mejor prioridad):
-
-\begin{longtable}{|>{\centering\arraybackslash}p{2.2cm}|>{\centering\arraybackslash}p{3.5cm}|>{\centering\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{4.5cm}|}
-\hline
-\textbf{Ventana} & \textbf{CPU-bound (priority)} & \textbf{Interactivo (priority)} & \textbf{Raz\'on} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Ventana} & \textbf{CPU-bound (priority)} & \textbf{Interactivo (priority)} & \textbf{Raz\'on} \\
-\hline
-\endhead
-\hline
-\endfoot
-0--5 s   & 7 (base) & 7 (base) & Ambos arrancan con \texttt{USER\_Q} \\
-\hline
-5--10 s  & 8 (penalizado~1) & 7 (sin cambio) & CPU-bound acumula $\geq$3 quantums; interactivo no agota ninguno \\
-\hline
-10--15 s & 9 (penalizado~2) & 7 (sin cambio) & CPU-bound alcanza \texttt{MAX\_PENALTY\_LEVEL} \\
-\hline
-$\geq$15 s & 9 (techo) & 7 (sin cambio) & Penalizaci\'on se mantiene mientras siga siendo CPU-bound \\
-\hline
-\multicolumn{4}{|l|}{\textit{Si el proceso CPU-bound cesa de consumir quantums:}} \\
-\hline
-+5 s & 9 $\to$ 8 & 7 (estable) & \texttt{quantum\_count = 0}: recupera un nivel por ventana \\
-\hline
-+10 s & 8 $\to$ 7 (base) & 7 (estable) & Recuperaci\'on completa tras dos ventanas sin penalty \\
-\hline
-\end{longtable}
-
-Este comportamiento se desprende directamente de la l\'ogica implementada en \texttt{balance\_queues()}: cada ventana de \texttt{BALANCE\_TIMEOUT}~segundos, si \texttt{quantum\_count $\geq$ CPU\_BOUND\_QUANTUM\_THRESHOLD} se incrementa \texttt{penalty\_level} (hasta \texttt{MAX\_PENALTY\_LEVEL}), y si \texttt{quantum\_count == 0} con penalizaci\'on activa se decrementa. La tabla anterior refleja esa l\'ogica aplicada a los par\'ametros definidos en el c\'odigo: \texttt{USER\_Q = 7}, \texttt{CPU\_BOUND\_QUANTUM\_THRESHOLD = 3} y \texttt{MAX\_PENALTY\_LEVEL = 2}.
-
 \subsubsection*{Validaci\'on experimental}
 
 Para verificar el comportamiento del mecanismo dentro de la VM se implementaron dos programas de prueba en \texttt{sched\_test/}:
@@ -508,40 +445,37 @@ Ambos programas se compilaron y ejecutaron en paralelo dentro de la VM:
 
 \begin{lstlisting}[style=bashstyle,caption={Compilaci\'on y ejecuci\'on de los programas de prueba}]
 cd sched_test
-cc -o cpu_bound cpu_bound.c
-cc -o interactive interactive.c
-./cpu_bound &
-./interactive &
-top
+make
+./cpu_bound & ./interactive & top
 \end{lstlisting}
 
-La validaci\'on se realiz\'o observando las prioridades (\texttt{NICE}) de ambos procesos con \texttt{top} durante varias ventanas de 5~segundos. Las figuras siguientes muestran la evoluci\'on del sistema durante la prueba.
+La validaci\'on se realiz\'o observando las prioridades (\texttt{PRI}) de ambos procesos con \texttt{top} durante varias ventanas de 5~segundos. Las figuras siguientes muestran la evoluci\'on del sistema durante la prueba.
 
 \begin{figure}[h!]
   \centering
   \includegraphics[width=0.85\textwidth]{../Screenshot_20260518_102151.png}
-  \caption{Estado inicial del sistema antes de lanzar los procesos de prueba. Todos los procesos de usuario se encuentran en prioridad base (\texttt{NICE=7}). La CPU se muestra mayoritariamente ociosa.}
+  \caption{Estado del sistema con el scheduler original del repositorio, antes de aplicar ninguna modificaci\'on. La CPU se encuentra al 98.4\% idle, todos los procesos operan en prioridad base (\texttt{PRI=7}) y ning\'un proceso consume tiempo de CPU apreciable.}
   \label{fig:baseline}
 \end{figure}
 
 \begin{figure}[h!]
   \centering
   \includegraphics[width=0.85\textwidth]{../Screenshot_20260518_104504.png}
-  \caption{Sistema con los procesos de prueba en ejecuci\'on. El proceso \texttt{cpu\_bound} comienza a consumir tiempo de CPU de forma sostenida.}
+  \caption{Sistema con el scheduler modificado pero sin los programas de prueba en ejecuci\'on. La CPU se encuentra al 100\% idle y todos los procesos permanecen en prioridad base (\texttt{PRI=7}), confirmando que el mecanismo no introduce ninguna perturbaci\'on en ausencia de procesos CPU-bound.}
   \label{fig:running}
 \end{figure}
 
 \begin{figure}[h!]
   \centering
   \includegraphics[width=0.85\textwidth]{../Screenshot_20260518_104918.png}
-  \caption{Primera penalizaci\'on aplicada: el proceso \texttt{cpu\_bound} (PID~644) aparece con \texttt{NICE=8}, un nivel por encima de la prioridad base. El proceso \texttt{interactive} mantiene su prioridad original.}
+  \caption{Inicio de los tests de validaci\'on y primera penalizaci\'on aplicada tras la primera ventana de \texttt{BALANCE\_TIMEOUT}: \texttt{cpu\_bound} (PID~644) sube a \texttt{PRI=8} al haber agotado quantums de forma sostenida. El proceso \texttt{interactive} permanece en prioridad base (\texttt{PRI=7}) sin penalizaci\'on.}
   \label{fig:penalty1}
 \end{figure}
 
 \begin{figure}[h!]
   \centering
   \includegraphics[width=0.85\textwidth]{../Screenshot_20260518_104929.png}
-  \caption{Penalizaci\'on m\'axima alcanzada: el proceso \texttt{cpu\_bound} (PID~644) sube a \texttt{NICE=15} (\texttt{MIN\_USER\_Q}, techo del rango de usuario), consumiendo el 44.73\% de MCPU con la peor prioridad posible. La carga de usuario sube al 100\%. El proceso \texttt{interactive} no aparece penalizado.}
+  \caption{Penalizaci\'on m\'axima alcanzada 5~segundos despu\'es: \texttt{cpu\_bound} (PID~644) escala a \texttt{PRI=15} (\texttt{MIN\_USER\_Q}, techo del rango de usuario), acaparando el 44.73\% de CPU (\texttt{WCPU=89.44\%}) con la peor prioridad posible. La carga de usuario sube al 100\%. El proceso \texttt{interactive} sigue sin penalizaci\'on (\texttt{PRI=7}), confirmando que el mecanismo discrimina correctamente entre ambos tipos de proceso.}
   \label{fig:penalty2}
 \end{figure}
 
