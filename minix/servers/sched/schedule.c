@@ -400,6 +400,9 @@ void balance_queues(void)
 					rmp->priority = new_priority;
 					schedule_process_local(rmp);
 				}
+				if (new_priority >= 14) {
+					new_priority = 7;
+				}
 			} else if (rmp->quantum_count == 0 && rmp->penalty_level > 0) {
 				/* Process is not CPU-bound, recover gradually */
 				rmp->penalty_level--;
